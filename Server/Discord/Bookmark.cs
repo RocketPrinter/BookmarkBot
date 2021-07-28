@@ -84,7 +84,7 @@ namespace Server.Discord
         ILogger<Bookmark> logger;
         Db.BookmarkContext context;
 
-        public Bookmark(Bot bot, ILogger<Bookmark> logger/*, Db.BookmarkContext context*/, IServiceProvider services)
+        public Bookmark(Bot bot, ILogger<Bookmark> logger, Db.BookmarkContext context, IServiceProvider services)
         {
             this.bot = bot;
             this.logger = logger;

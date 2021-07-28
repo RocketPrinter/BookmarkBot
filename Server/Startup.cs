@@ -42,8 +42,8 @@ namespace Server
             //Bookmark
             if (Configuration.GetValue<bool>("BookmarkFeature"))
             {
-                //services.AddDbContext<Db.BookmarkContext>(options =>
-                //    options.UseNpgsql(Configuration.GetConnectionString("BookmarkContext")));
+                services.AddDbContext<Db.BookmarkContext>(options =>
+                    options.UseNpgsql(Configuration.GetConnectionString("Bookmark")), contextLifetime:ServiceLifetime.Singleton);
 
                 services.Add(new ServiceDescriptor(typeof(Discord.Bookmark), typeof(Discord.Bookmark), ServiceLifetime.Singleton));
                 warmUpTypes.Add(typeof(Discord.Bookmark));
