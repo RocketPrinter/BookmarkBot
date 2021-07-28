@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -22,17 +23,31 @@ namespace Server
         }
 
         public IConfiguration Configuration { get; }
+        public List<System.Type> warmUpTypes = new();
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.Add(new ServiceDescriptor(typeof(Discord.Bot), typeof(Discord.Bot), ServiceLifetime.Singleton));
-
+            //REST API and Swagger
             services.AddControllers();
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "Server", Version = "v1" });
             });
+
+            //Discord client
+            services.Add(new ServiceDescriptor(typeof(Discord.Bot), typeof(Discord.Bot), ServiceLifetime.Singleton));
+            warmUpTypes.Add(typeof(Discord.Bot));
+
+            //Bookmark
+            if (Configuration.GetValue<bool>("BookmarkFeature"))
+            {
+                //services.AddDbContext<Db.BookmarkContext>(options =>
+                //    options.UseNpgsql(Configuration.GetConnectionString("BookmarkContext")));
+
+                services.Add(new ServiceDescriptor(typeof(Discord.Bookmark), typeof(Discord.Bookmark), ServiceLifetime.Singleton));
+                warmUpTypes.Add(typeof(Discord.Bookmark));
+            }
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -56,8 +71,9 @@ namespace Server
                 endpoints.MapControllers();
             });
 
-            //warm up discord bot
-            app.ApplicationServices.GetService<Discord.Bot>();
+            //warm up types
+            foreach (Type type in warmUpTypes)
+                app.ApplicationServices.GetService(type);
         }
     }
 }

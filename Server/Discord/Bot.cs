@@ -10,7 +10,7 @@ namespace Server.Discord
 {
     public class Bot
     {
-        DiscordClient client;
+        public DiscordClient client;
         ILogger<Bot> logger;
 
         public Bot(ILogger<Bot> logger, IConfiguration configuration)
@@ -29,12 +29,11 @@ namespace Server.Discord
 
         async void Run()
         {
-            client.MessageCreated += async (s, e) =>
+            /*client.MessageCreated += async (s, e) =>
             {
                 if (e.Message.Content.ToLower().StartsWith("ping"))
                     await e.Message.Channel.SendMessageAsync("pong!");
-
-            };
+            };*/
 
             await client.ConnectAsync();
         }
