@@ -32,7 +32,7 @@ namespace Server
             services.AddControllers();
             services.AddSwaggerGen(c =>
             {
-                c.SwaggerDoc("v1", new OpenApiInfo { Title = "Server", Version = "v1" });
+                c.SwaggerDoc("v1", new OpenApiInfo { Title = "NotEnoughEmotes", Version = "v1" });
             });
 
             //Discord client
