@@ -17,13 +17,19 @@ namespace Server.Discord
     {
         public class BookmarkCommands : BaseCommandModule
         {
-            public ILogger<BookmarkCommands> logger { get; set; }
+            ILogger<BookmarkCommands> logger;
+            Bookmark bookmark;
+
+            public BookmarkCommands(ILogger<BookmarkCommands> logger, Bookmark bookmark)
+            {
+                this.logger = logger;
+                this.bookmark = bookmark;
+            }
 
             #region add
-            [Command("add"),Aliases("a"),Description("Bookmark a message by replying to it with this command or pasting the message id.")]
+            [Command("add"), Aliases("a"), Description("Bookmark a message by replying to it with this command or pasting the message id.")]
             public async Task Add(CommandContext ctx)
             {
-                logger.LogInformation("di works UwU");
                 if (ctx.Message.ReferencedMessage == null)
                 {
                     await ctx.Message.RespondAsync("Please reply to the message you want to bookmark or paste the message id.");
@@ -34,7 +40,13 @@ namespace Server.Discord
             [Command("add")]
             public async Task Add(CommandContext ctx, DiscordMessage message)
             {
-                throw new NotImplementedException();
+                if (await bookmark.CheckBookmark(ctx.User, message))
+                {
+                    await ctx.RespondAsync("That message is already bookmarked!");
+                    return;
+                }
+                await bookmark.AddBookmark(ctx.User, message);
+                //todo: handle exceptions
             }
             #endregion
 
@@ -42,7 +54,7 @@ namespace Server.Discord
             [Command("remove"), Aliases("rem", "r"), Description("Remove a bookmark from a message by replying to it with this command or pasting the message id.")]
             public async Task Rem(CommandContext ctx)
             {
-                if(ctx.Message.ReferencedMessage == null)
+                if (ctx.Message.ReferencedMessage == null)
                 {
                     await ctx.Message.RespondAsync("Please reply to the message you want to remove the bookmark to or paste the message id.");
                     return;
@@ -52,7 +64,13 @@ namespace Server.Discord
             [Command("remove")]
             public async Task Rem(CommandContext ctx, DiscordMessage message)
             {
-                throw new NotImplementedException();
+                if (!await bookmark.CheckBookmark(ctx.User, message))
+                {
+                    await ctx.RespondAsync("That message is not bookmarked!");
+                    return;
+                }
+                await bookmark.RemoveBookmark(ctx.User, message);
+                //todo: handle exceptions
             }
             #endregion
 
@@ -103,21 +121,46 @@ namespace Server.Discord
             logger.LogInformation("Bookmark featureset enabled");
         }
 
+        #region Events
         readonly DiscordEmoji bookmarkEmoji = DiscordEmoji.FromUnicode("📑");
 
         private async Task ReactionAdded(DiscordClient sender, DSharpPlus.EventArgs.MessageReactionAddEventArgs e)
         {
-            if (e.Emoji != bookmarkEmoji)
+            if (e.Emoji != bookmarkEmoji || await CheckBookmark(e.User,e.Message))
                 return;
-            throw new NotImplementedException();
+
+            await AddBookmark(e.User,e.Message);
+            //todo: maybe add reply pinging the user that gets deleted after 5 seconds
+            //todo: handle exceptions
         }
         private async Task ReactionRemoved(DiscordClient sender, DSharpPlus.EventArgs.MessageReactionRemoveEventArgs e)
         {
-            if (e.Emoji != bookmarkEmoji)
+            if (e.Emoji != bookmarkEmoji || ! await CheckBookmark(e.User,e.Message))
                 return;
+
+            await RemoveBookmark(e.User, e.Message);
+            //todo: maybe add reply pinging the user that gets deleted after 5 seconds
+            //todo: handle exceptions
+        }
+        #endregion
+
+        #region DB Interactions
+
+        public async Task<bool> CheckBookmark(DiscordUser user, DiscordMessage msg)
+        {
             throw new NotImplementedException();
         }
 
+        public async Task AddBookmark(DiscordUser user, DiscordMessage msg)
+        {
+            throw new NotImplementedException();
+        }
 
+        public async Task RemoveBookmark(DiscordUser user, DiscordMessage msg)
+        {
+            throw new NotImplementedException();
+        }
+
+        #endregion
     }
 }
