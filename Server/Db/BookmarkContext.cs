@@ -20,6 +20,7 @@ namespace Server.Db
             public List<Bookmark> Bookmarks { get; set; }
         }
 
+        //[Index(nameof(MessageSnowflake))]
         public class Bookmark
         {
             public int BookmarkId { get; set; }
@@ -32,7 +33,7 @@ namespace Server.Db
         }
         #endregion
 
-        DbSet<User> Users { get; set; }
+        public DbSet<User> Users { get; set; }
 
         public BookmarkContext(DbContextOptions<BookmarkContext> options)
            : base(options)

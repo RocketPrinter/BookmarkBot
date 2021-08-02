@@ -8,8 +8,8 @@ using DSharpPlus;
 using DSharpPlus.CommandsNext;
 using DSharpPlus.CommandsNext.Attributes;
 using DSharpPlus.Entities;
-using static Server.Db.BookmarkContext;
 using Microsoft.Extensions.DependencyInjection;
+using Server.Db;
 
 namespace Server.Discord
 {
@@ -40,12 +40,10 @@ namespace Server.Discord
             [Command("add")]
             public async Task Add(CommandContext ctx, DiscordMessage message)
             {
-                if (await bookmark.CheckBookmark(ctx.User, message))
-                {
+                if(await bookmark.BookmarkAdd(ctx.User, message))
+                    await ctx.RespondAsync("Bookmark added! Use b!list to view your bookmarks!");
+                else
                     await ctx.RespondAsync("That message is already bookmarked!");
-                    return;
-                }
-                await bookmark.AddBookmark(ctx.User, message);
                 //todo: handle exceptions
             }
             #endregion
@@ -64,12 +62,10 @@ namespace Server.Discord
             [Command("remove")]
             public async Task Rem(CommandContext ctx, DiscordMessage message)
             {
-                if (!await bookmark.CheckBookmark(ctx.User, message))
-                {
+                if(await bookmark.BookmarkRemove(ctx.User, message))
+                    await ctx.RespondAsync("Bookmark removed! Use b!list to view your bookmarks!");
+                else
                     await ctx.RespondAsync("That message is not bookmarked!");
-                    return;
-                }
-                await bookmark.RemoveBookmark(ctx.User, message);
                 //todo: handle exceptions
             }
             #endregion
@@ -123,40 +119,44 @@ namespace Server.Discord
 
         #region Events
         readonly DiscordEmoji bookmarkEmoji = DiscordEmoji.FromUnicode("📑");
+        const int replyDeleteDelay=5000; //in miliseconds
 
         private async Task ReactionAdded(DiscordClient sender, DSharpPlus.EventArgs.MessageReactionAddEventArgs e)
         {
-            if (e.Emoji != bookmarkEmoji || await CheckBookmark(e.User,e.Message))
+            if (e.Emoji != bookmarkEmoji)
                 return;
 
-            await AddBookmark(e.User,e.Message);
-            //todo: maybe add reply pinging the user that gets deleted after 5 seconds
+            bool ok = await BookmarkAdd(e.User,e.Message);
+
+            DiscordMessage reply = await e.Message.RespondAsync($"{e.User.Mention} " + (ok?"bookmark added!": "That message is already bookmarked"));
+            await Task.Delay(replyDeleteDelay);
+            await reply.DeleteAsync();
+
             //todo: handle exceptions
         }
         private async Task ReactionRemoved(DiscordClient sender, DSharpPlus.EventArgs.MessageReactionRemoveEventArgs e)
         {
-            if (e.Emoji != bookmarkEmoji || ! await CheckBookmark(e.User,e.Message))
+            if (e.Emoji != bookmarkEmoji)
                 return;
 
-            await RemoveBookmark(e.User, e.Message);
-            //todo: maybe add reply pinging the user that gets deleted after 5 seconds
+            bool ok = await BookmarkRemove(e.User, e.Message);
+
+            DiscordMessage reply = await e.Message.RespondAsync($"{e.User.Mention} " + (ok?"bookmark removed!": "That message is not bookmarked"));
+            await Task.Delay(replyDeleteDelay);
+            await reply.DeleteAsync();
+
             //todo: handle exceptions
         }
         #endregion
 
         #region DB Interactions
 
-        public async Task<bool> CheckBookmark(DiscordUser user, DiscordMessage msg)
+        public async Task<bool> BookmarkAdd(DiscordUser user, DiscordMessage msg)
         {
             throw new NotImplementedException();
         }
 
-        public async Task AddBookmark(DiscordUser user, DiscordMessage msg)
-        {
-            throw new NotImplementedException();
-        }
-
-        public async Task RemoveBookmark(DiscordUser user, DiscordMessage msg)
+        public async Task<bool> BookmarkRemove(DiscordUser user, DiscordMessage msg)
         {
             throw new NotImplementedException();
         }
