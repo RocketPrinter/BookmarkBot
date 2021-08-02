@@ -12,38 +12,24 @@ namespace Server.Db
     public class BookmarkContext : DbContext
     {
         #region Entities
-        public class User
-        {
-            [Key]
-            public ulong UserSnowflake { get; set; }
-
-            public List<Bookmark> Bookmarks { get; set; }
-        }
-
-        //[Index(nameof(MessageSnowflake))]
+        [Index(nameof(MessageSnowflake),nameof(UserSnowflake),IsUnique = true)]
         public class Bookmark
         {
             public int BookmarkId { get; set; }
-            public ulong AuthorSnowflake { get; set; } 
+            public ulong UserSnowflake { get; set; }
+
+            public ulong? GuildSnowFlake { get; set; }
             public ulong ChannelSnowflake { get; set; }
             public ulong MessageSnowflake { get; set; }
 
-            public ulong UserSnowflake { get; set; }
-            public User User { get; set; }
+            public ulong AuthorSnowflake { get; set; } 
         }
         #endregion
 
-        public DbSet<User> Users { get; set; }
+        public DbSet<Bookmark> Bookmarks { get; set; }
 
         public BookmarkContext(DbContextOptions<BookmarkContext> options)
            : base(options)
         { }
-
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
-        {
-            modelBuilder.Entity<Bookmark>()
-                .HasIndex(b => new { b.MessageSnowflake, b.UserSnowflake })
-                .IsUnique(true);
-        }
     }
 }
