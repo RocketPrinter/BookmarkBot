@@ -10,6 +10,7 @@ using DSharpPlus.CommandsNext.Attributes;
 using DSharpPlus.Entities;
 using Microsoft.Extensions.DependencyInjection;
 using Server.Db;
+using Npgsql;
 
 namespace Server.Discord
 {
@@ -57,7 +58,7 @@ namespace Server.Discord
                     await ctx.Message.RespondAsync("Please reply to the message you want to remove the bookmark to or paste the message id.");
                     return;
                 }
-                await Add(ctx, ctx.Message.ReferencedMessage);
+                await Rem(ctx, ctx.Message.ReferencedMessage);
             }
             [Command("remove")]
             public async Task Rem(CommandContext ctx, DiscordMessage message)
@@ -112,53 +113,108 @@ namespace Server.Discord
                 StringPrefixes = new[] { "b!" },
                 Services = services
             });
-            commands.RegisterCommands<BookmarkCommands>();
+            //commands.RegisterCommands<BookmarkCommands>();
 
             logger.LogInformation("Bookmark featureset enabled");
         }
 
         #region Events
-        readonly DiscordEmoji bookmarkEmoji = DiscordEmoji.FromUnicode("📑");
+        readonly DiscordEmoji bookmarkEmoji = DiscordEmoji.FromUnicode("🔖");
         const int replyDeleteDelay=5000; //in miliseconds
 
-        private async Task ReactionAdded(DiscordClient sender, DSharpPlus.EventArgs.MessageReactionAddEventArgs e)
+        private Task ReactionAdded(DiscordClient sender, DSharpPlus.EventArgs.MessageReactionAddEventArgs e)
         {
             if (e.Emoji != bookmarkEmoji)
-                return;
+                return Task.CompletedTask;
 
-            bool ok = await BookmarkAdd(e.User,e.Message);
+            _ = Task.Run(async () =>
+            {
+                bool ok = await BookmarkAdd(e.User, e.Message);
 
-            DiscordMessage reply = await e.Message.RespondAsync($"{e.User.Mention} " + (ok?"bookmark added!": "That message is already bookmarked"));
-            await Task.Delay(replyDeleteDelay);
-            await reply.DeleteAsync();
+                DiscordMessage reply = await e.Message.RespondAsync($"{e.User.Mention} " + (ok ? "bookmark added!" : "That message is already bookmarked"));
+                await Task.Delay(replyDeleteDelay);
+                await reply.DeleteAsync();
+            });
 
-            //todo: handle exceptions
+            return Task.CompletedTask;
         }
-        private async Task ReactionRemoved(DiscordClient sender, DSharpPlus.EventArgs.MessageReactionRemoveEventArgs e)
+        private Task ReactionRemoved(DiscordClient sender, DSharpPlus.EventArgs.MessageReactionRemoveEventArgs e)
         {
             if (e.Emoji != bookmarkEmoji)
-                return;
+                return Task.CompletedTask;
 
-            bool ok = await BookmarkRemove(e.User, e.Message);
+            _ = Task.Run(async () =>
+            {
+                bool ok = await BookmarkRemove(e.User, e.Message);
 
-            DiscordMessage reply = await e.Message.RespondAsync($"{e.User.Mention} " + (ok?"bookmark removed!": "That message is not bookmarked"));
-            await Task.Delay(replyDeleteDelay);
-            await reply.DeleteAsync();
+                DiscordMessage reply = await e.Message.RespondAsync($"{e.User.Mention} " + (ok ? "bookmark removed!" : "That message is not bookmarked"));
+                await Task.Delay(replyDeleteDelay);
+                await reply.DeleteAsync();
+            });
 
-            //todo: handle exceptions
+            return Task.CompletedTask;
         }
         #endregion
 
         #region DB Interactions
 
+        /// <returns> false if a bookmark already existed, throws an exception if any other error occurs</returns>
         public async Task<bool> BookmarkAdd(DiscordUser user, DiscordMessage msg)
         {
-            throw new NotImplementedException();
+            if (msg.Author==null)
+            {
+                //fix weird caching issue where author is null
+                msg = await msg.Channel.GetMessageAsync(msg.Id);
+            }
+
+            context.Add(new BookmarkContext.Bookmark()
+            {
+                UserSnowflake = user.Id,
+                GuildSnowFlake = msg.Channel.GuildId,
+                ChannelSnowflake = msg.ChannelId,
+                MessageSnowflake = msg.Id,
+                AuthorSnowflake = msg.Author.Id
+            });
+
+            try
+            {
+                context.SaveChanges();    
+            }
+            catch (Exception ex)
+            {
+                HandlePostgressErrorCode(ex,PostgresErrorCodes.UniqueViolation);
+                return false;
+            }
+
+            return true;
         }
 
+        /// <returns> false if the bookmark didn't exist, throws an exception if any other error occurs</returns>
         public async Task<bool> BookmarkRemove(DiscordUser user, DiscordMessage msg)
         {
-            throw new NotImplementedException();
+            BookmarkContext.Bookmark b = context.Bookmarks.Single(b => b.MessageSnowflake == msg.Id && b.UserSnowflake == user.Id);
+            context.Bookmarks.Remove(b);
+
+            try
+            {
+                context.SaveChanges();
+            }
+            catch (Exception ex)
+            {
+                HandlePostgressErrorCode(ex,"");
+                return false;
+            }
+
+            return true;
+        }
+
+        public void HandlePostgressErrorCode(Exception ex, string code)
+        {
+            var sqlEx = ex.InnerException as PostgresException;
+            if (sqlEx != null && sqlEx.SqlState == code)
+                return;
+            else
+                throw ex;
         }
 
         #endregion
