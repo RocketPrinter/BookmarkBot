@@ -44,10 +44,9 @@ namespace Server.Discord
             public async Task Add(CommandContext ctx, DiscordMessage message)
             {
                 if(bookmark.BookmarkAdd(ctx.User, message))
-                    await ctx.RespondAsync("Bookmark added! Use b!list to view your bookmarks!");
+                    await ctx.RespondAsync("Bookmark added! Use the list command to view your bookmarks!");
                 else
                     await ctx.RespondAsync("That message is already bookmarked!");
-                //todo: handle exceptions
             }
             #endregion
 
@@ -66,10 +65,9 @@ namespace Server.Discord
             public async Task Rem(CommandContext ctx, DiscordMessage message)
             {
                 if(bookmark.BookmarkRemove(ctx.User, message))
-                    await ctx.RespondAsync("Bookmark removed! Use b!list to view your bookmarks!");
+                    await ctx.RespondAsync("Bookmark removed! Use the list command to view your bookmarks!");
                 else
                     await ctx.RespondAsync("That message is not bookmarked!");
-                //todo: handle exceptions
             }
             #endregion
 
@@ -109,8 +107,6 @@ namespace Server.Discord
 
             client.MessageReactionAdded += ReactionAdded;
             client.MessageReactionRemoved += ReactionRemoved;
-
-            //commands.RegisterCommands<BookmarkCommands>();
 
             logger.LogInformation("Bookmark featureset enabled");
         }

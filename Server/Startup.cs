@@ -94,6 +94,11 @@ namespace Server
                 endpoints.MapControllers();
             });
 
+            //register command modules
+            var cnext = app.ApplicationServices.GetService<CommandsNextExtension>();
+            if (Configuration.GetValue<bool>("BookmarkFeature"))
+                cnext.RegisterCommands<Discord.BookmarkFeatures.BookmarkCommands>();
+
             //warm up types
             foreach (Type type in warmUpTypes)
                 app.ApplicationServices.GetService(type);
