@@ -12,17 +12,18 @@ using Microsoft.Extensions.DependencyInjection;
 using Server.Db;
 using Npgsql;
 using Microsoft.EntityFrameworkCore;
+using static Server.Db.BookmarkContext;
 
 namespace Server.Discord
 {
-    public class Bookmark
+    public class BookmarkFeatures
     {
         public class BookmarkCommands : BaseCommandModule
         {
             ILogger<BookmarkCommands> logger;
-            Bookmark bookmark;
+            BookmarkFeatures bookmark;
 
-            public BookmarkCommands(ILogger<BookmarkCommands> logger, Bookmark bookmark)
+            public BookmarkCommands(ILogger<BookmarkCommands> logger, BookmarkFeatures bookmark)
             {
                 this.logger = logger;
                 this.bookmark = bookmark;
@@ -96,24 +97,19 @@ namespace Server.Discord
             #endregion
         }
 
-        public Bot bot;
-        ILogger<Bookmark> logger;
+        DiscordClient client;
+        ILogger<BookmarkFeatures> logger;
         Db.BookmarkContext context;
 
-        public Bookmark(Bot bot, ILogger<Bookmark> logger, Db.BookmarkContext context, IServiceProvider services)
+        public BookmarkFeatures(DiscordClient client, ILogger<BookmarkFeatures> logger, Db.BookmarkContext context, CommandsNextExtension commands)
         {
-            this.bot = bot;
+            this.client = client;
             this.logger = logger;
             this.context = context;
 
-            bot.client.MessageReactionAdded += ReactionAdded;
-            bot.client.MessageReactionRemoved += ReactionRemoved;
+            client.MessageReactionAdded += ReactionAdded;
+            client.MessageReactionRemoved += ReactionRemoved;
 
-            CommandsNextExtension commands = bot.client.UseCommandsNext(new CommandsNextConfiguration()
-            {
-                StringPrefixes = new[] { "b!" },
-                Services = services
-            });
             //commands.RegisterCommands<BookmarkCommands>();
 
             logger.LogInformation("Bookmark featureset enabled");
@@ -171,7 +167,7 @@ namespace Server.Discord
         /// <returns> false if a bookmark already existed, throws an exception if any other error occurs</returns>
         public bool BookmarkAdd(DiscordUser user, DiscordMessage msg)
         {
-            BookmarkContext.Bookmark b = new()
+            Bookmark b = new()
             {
                 UserSnowflake = user.Id,
                 GuildSnowFlake = msg.Channel.GuildId,
@@ -201,7 +197,7 @@ namespace Server.Discord
             //context.Database.ExecuteSqlInterpolated($@"DELETE FROM schema.""TABLE_NAME"" WHERE ""YOUR_COLUMN_NAME"" = {VALUE_TO_DELETE}");
 
             //todo: use a sql query instead
-            BookmarkContext.Bookmark b = context.Bookmarks.Single(b => b.MessageSnowflake == msg.Id && b.UserSnowflake == user.Id);
+            Bookmark b = context.Bookmarks.Single(b => b.MessageSnowflake == msg.Id && b.UserSnowflake == user.Id);
             context.Bookmarks.Remove(b);
 
             try

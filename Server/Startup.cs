@@ -1,3 +1,6 @@
+using DSharpPlus;
+using DSharpPlus.CommandsNext;
+using DSharpPlus.Entities;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
@@ -28,16 +31,36 @@ namespace Server
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            #region API
             //REST API and Swagger
             services.AddControllers();
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "NotEnoughEmotes", Version = "v1" });
             });
+            #endregion
 
+            #region Bot
             //Discord client
-            services.Add(new ServiceDescriptor(typeof(Discord.Bot), typeof(Discord.Bot), ServiceLifetime.Singleton));
-            warmUpTypes.Add(typeof(Discord.Bot));
+            services.AddSingleton(x =>
+            {
+                var client = new DiscordClient(new DiscordConfiguration()
+                {
+                    Token = Configuration.GetValue<string>("Bot:Token"),
+                    LoggerFactory = x.GetRequiredService<ILoggerFactory>(),
+                    Intents = DiscordIntents.All //TODO: Remove unused Intents
+                });
+                client.ConnectAsync(/*new DiscordActivity("the dashboard", ActivityType.Watching)*/).Wait();
+                return client;
+            });
+
+            //Commandsnext
+            services.AddSingleton(x => x.GetRequiredService<DiscordClient>().UseCommandsNext(new CommandsNextConfiguration()
+            {
+                StringPrefixes = new[] { "b/" },
+                Services = x.GetRequiredService<IServiceProvider>()
+            }));
+            #endregion
 
             //Bookmark
             if (Configuration.GetValue<bool>("BookmarkFeature"))
@@ -45,8 +68,8 @@ namespace Server
                 services.AddDbContext<Db.BookmarkContext>(options =>
                     options.UseNpgsql(Configuration.GetConnectionString("Bookmark")), contextLifetime:ServiceLifetime.Singleton);
 
-                services.Add(new ServiceDescriptor(typeof(Discord.Bookmark), typeof(Discord.Bookmark), ServiceLifetime.Singleton));
-                warmUpTypes.Add(typeof(Discord.Bookmark));
+                services.AddSingleton(typeof(Discord.BookmarkFeatures));
+                warmUpTypes.Add(typeof(Discord.BookmarkFeatures));
             }
         }
 

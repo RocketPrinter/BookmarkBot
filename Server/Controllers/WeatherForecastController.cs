@@ -18,7 +18,7 @@ namespace Server.Controllers
 
         private readonly ILogger<WeatherForecastController> _logger;
 
-        public WeatherForecastController(ILogger<WeatherForecastController> logger, Discord.Bot bot)
+        public WeatherForecastController(ILogger<WeatherForecastController> logger)
         {
             _logger = logger;
         }
