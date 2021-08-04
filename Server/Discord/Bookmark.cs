@@ -11,6 +11,7 @@ using DSharpPlus.Entities;
 using Microsoft.Extensions.DependencyInjection;
 using Server.Db;
 using Npgsql;
+using Microsoft.EntityFrameworkCore;
 
 namespace Server.Discord
 {
@@ -41,7 +42,7 @@ namespace Server.Discord
             [Command("add")]
             public async Task Add(CommandContext ctx, DiscordMessage message)
             {
-                if(await bookmark.BookmarkAdd(ctx.User, message))
+                if(bookmark.BookmarkAdd(ctx.User, message))
                     await ctx.RespondAsync("Bookmark added! Use b!list to view your bookmarks!");
                 else
                     await ctx.RespondAsync("That message is already bookmarked!");
@@ -63,7 +64,7 @@ namespace Server.Discord
             [Command("remove")]
             public async Task Rem(CommandContext ctx, DiscordMessage message)
             {
-                if(await bookmark.BookmarkRemove(ctx.User, message))
+                if(bookmark.BookmarkRemove(ctx.User, message))
                     await ctx.RespondAsync("Bookmark removed! Use b!list to view your bookmarks!");
                 else
                     await ctx.RespondAsync("That message is not bookmarked!");
@@ -129,7 +130,16 @@ namespace Server.Discord
 
             _ = Task.Run(async () =>
             {
-                bool ok = await BookmarkAdd(e.User, e.Message);
+                DiscordMessage msg;
+                if (e.Message.Author == null)
+                {
+                    //fix weird caching issue where author is null
+                    msg = await e.Message.Channel.GetMessageAsync(e.Message.Id);
+                }
+                else
+                    msg = e.Message;
+
+                bool ok = BookmarkAdd(e.User, msg);
 
                 DiscordMessage reply = await e.Message.RespondAsync($"{e.User.Mention} " + (ok ? "bookmark added!" : "That message is already bookmarked"));
                 await Task.Delay(replyDeleteDelay);
@@ -145,7 +155,7 @@ namespace Server.Discord
 
             _ = Task.Run(async () =>
             {
-                bool ok = await BookmarkRemove(e.User, e.Message);
+                bool ok = BookmarkRemove(e.User, e.Message);
 
                 DiscordMessage reply = await e.Message.RespondAsync($"{e.User.Mention} " + (ok ? "bookmark removed!" : "That message is not bookmarked"));
                 await Task.Delay(replyDeleteDelay);
@@ -159,30 +169,26 @@ namespace Server.Discord
         #region DB Interactions
 
         /// <returns> false if a bookmark already existed, throws an exception if any other error occurs</returns>
-        public async Task<bool> BookmarkAdd(DiscordUser user, DiscordMessage msg)
+        public bool BookmarkAdd(DiscordUser user, DiscordMessage msg)
         {
-            if (msg.Author==null)
-            {
-                //fix weird caching issue where author is null
-                msg = await msg.Channel.GetMessageAsync(msg.Id);
-            }
-
-            context.Add(new BookmarkContext.Bookmark()
+            BookmarkContext.Bookmark b = new()
             {
                 UserSnowflake = user.Id,
                 GuildSnowFlake = msg.Channel.GuildId,
                 ChannelSnowflake = msg.ChannelId,
                 MessageSnowflake = msg.Id,
                 AuthorSnowflake = msg.Author.Id
-            });
+            };
+            context.Add(b);
 
             try
             {
                 context.SaveChanges();    
             }
-            catch (Exception ex)
+            catch (DbUpdateException ex)
             {
                 HandlePostgressErrorCode(ex,PostgresErrorCodes.UniqueViolation);
+                context.Entry(b).State = EntityState.Detached;
                 return false;
             }
 
@@ -190,8 +196,11 @@ namespace Server.Discord
         }
 
         /// <returns> false if the bookmark didn't exist, throws an exception if any other error occurs</returns>
-        public async Task<bool> BookmarkRemove(DiscordUser user, DiscordMessage msg)
+        public bool BookmarkRemove(DiscordUser user, DiscordMessage msg)//todo: this ugh
         {
+            //context.Database.ExecuteSqlInterpolated($@"DELETE FROM schema.""TABLE_NAME"" WHERE ""YOUR_COLUMN_NAME"" = {VALUE_TO_DELETE}");
+
+            //todo: use a sql query instead
             BookmarkContext.Bookmark b = context.Bookmarks.Single(b => b.MessageSnowflake == msg.Id && b.UserSnowflake == user.Id);
             context.Bookmarks.Remove(b);
 
@@ -199,16 +208,17 @@ namespace Server.Discord
             {
                 context.SaveChanges();
             }
-            catch (Exception ex)
+            catch (DbUpdateException ex)
             {
-                HandlePostgressErrorCode(ex,"");
+                HandlePostgressErrorCode(ex,"");//todo: figure out the correct code
+                context.Entry(b).State = EntityState.Detached;
                 return false;
             }
 
             return true;
         }
 
-        public void HandlePostgressErrorCode(Exception ex, string code)
+        public void HandlePostgressErrorCode(DbUpdateException ex, string code)
         {
             var sqlEx = ex.InnerException as PostgresException;
             if (sqlEx != null && sqlEx.SqlState == code)
