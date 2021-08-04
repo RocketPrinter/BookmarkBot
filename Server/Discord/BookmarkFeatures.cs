@@ -30,7 +30,7 @@ namespace Server.Discord
             }
 
             #region add
-            [Command("add"), Aliases("a"), Description("Bookmark a message by replying to it with this command or pasting the message id.")]
+            [Command("add"), Aliases("a"), Description("Bookmark a message by replying to it with this command or pasting the message id. You an also react with 🔖 for the same result.")]
             public async Task Add(CommandContext ctx)
             {
                 if (ctx.Message.ReferencedMessage == null)
@@ -51,7 +51,7 @@ namespace Server.Discord
             #endregion
 
             #region rem
-            [Command("remove"), Aliases("rem", "r"), Description("Remove a bookmark from a message by replying to it with this command or pasting the message id.")]
+            [Command("remove"), Aliases("rem", "r"), Description("Remove a bookmark from a message by replying to it with this command or pasting the message id.  Remove this reaction 🔖 for the same result.")]
             public async Task Rem(CommandContext ctx)
             {
                 if (ctx.Message.ReferencedMessage == null)
@@ -75,9 +75,10 @@ namespace Server.Discord
             [Command("list"), Aliases("l"), Description("List all the bookmarks. You can add a mention or a channel to filter the results.")]
             public async Task List(CommandContext ctx)
             {
-                await List(ctx, null, null);
+                throw new NotImplementedException();
+                //await List(ctx, null, null);
             }
-            [Command("list")]
+            /*[Command("list")]
             public async Task List(CommandContext ctx, [Description("User to filter by")] DiscordUser user)
             {
                 await List(ctx, user, null);
@@ -91,7 +92,7 @@ namespace Server.Discord
             public async Task List(CommandContext ctx, [Description("User to filter by")] DiscordUser user, [Description("Channel to filter by")] DiscordChannel channel)
             {
                 throw new NotImplementedException();
-            }
+            }*/
             #endregion
         }
 
