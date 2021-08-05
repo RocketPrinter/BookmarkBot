@@ -191,22 +191,22 @@ namespace Server.Discord
         /// <returns> false if the bookmark didn't exist, throws an exception if any other error occurs</returns>
         public bool BookmarkRemove(DiscordUser user, DiscordMessage msg)//todo: this ugh
         {
-            //context.Database.ExecuteSqlInterpolated($@"DELETE FROM schema.""TABLE_NAME"" WHERE ""YOUR_COLUMN_NAME"" = {VALUE_TO_DELETE}");
-
             //todo: use a sql query instead
-            Bookmark b = context.Bookmarks.Single(b => b.MessageSnowflake == msg.Id && b.UserSnowflake == user.Id);
+            Bookmark b = context.Bookmarks.SingleOrDefault(b => b.MessageSnowflake == msg.Id && b.UserSnowflake == user.Id);
+            if (b == null)
+                return false;
             context.Bookmarks.Remove(b);
 
-            try
-            {
+            //try
+            //{
                 context.SaveChanges();
-            }
-            catch (DbUpdateException ex)
-            {
-                HandlePostgressErrorCode(ex,"");//todo: figure out the correct code
-                context.Entry(b).State = EntityState.Detached;
-                return false;
-            }
+            //}
+            //catch (DbUpdateException ex)
+            //{
+            //    HandlePostgressErrorCode(ex,"");
+            //    context.Entry(b).State = EntityState.Detached;
+            //    return false;
+            //}
 
             return true;
         }
@@ -214,6 +214,8 @@ namespace Server.Discord
         public void HandlePostgressErrorCode(DbUpdateException ex, string code)
         {
             var sqlEx = ex.InnerException as PostgresException;
+            if (sqlEx != null)
+                logger.LogInformation(sqlEx.SqlState);
             if (sqlEx != null && sqlEx.SqlState == code)
                 return;
             else
