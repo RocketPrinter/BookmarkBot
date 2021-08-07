@@ -72,27 +72,49 @@ namespace Server.Discord
             #endregion
 
             #region list
-            [Command("list"), Aliases("l"), Description("List all the bookmarks. You can add a mention or a channel to filter the results.")]
-            public async Task List(CommandContext ctx)
+
+            const string argumentsDescription = "Optional arguments: `user:<mention or id>` `channel:<mention or id>` `server:<id>`";
+
+            [Command("list"), Aliases("l"), Description("List all the bookmarks. You can filter the results using arguments.")]
+            public async Task List(CommandContext ctx, [RemainingText] [Description(argumentsDescription)] string arguments)
             {
-                throw new NotImplementedException();
-                //await List(ctx, null, null);
+                ulong userFilterId=0, channelFilterId=0, serverFilterId=0;
+                if (arguments != null && arguments != "")
+                {
+                    //preprocess and split string
+                    string[] tokens = arguments.Replace(":", ": ").Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+                    //check
+                    for (int i=0;i<tokens.Length-1;i++)
+                    {
+                        ulong result;
+                        switch (tokens[i])
+                        {
+                            case "user:":
+                               if (ulong.TryParse(tokens[i + 1], out result))
+                                   userFilterId = result;
+                               else if (tokens[i + 1].StartsWith("<@!") && ulong.TryParse(tokens[i+1].Substring(3,tokens[i+1].Length-4),out result))
+                                   userFilterId = result;
+                               break;
+
+                            case "channel:":
+                               if (ulong.TryParse(tokens[i + 1], out result))
+                                   channelFilterId = result;
+                               else if (tokens[i + 1].StartsWith("<#") && ulong.TryParse(tokens[i + 1].Substring(2, tokens[i + 1].Length - 3), out result))
+                                   channelFilterId = result;
+                               break;
+
+                            case "server:":
+                               if (ulong.TryParse(tokens[i + 1], out result))
+                                   serverFilterId = result;
+                               break;
+                        }
+                    }
+
+                    //testing
+                    await ctx.Message.RespondAsync($"user:{userFilterId}\nchannel:{channelFilterId}\nserver:{serverFilterId}");
+                }
             }
-            /*[Command("list")]
-            public async Task List(CommandContext ctx, [Description("User to filter by")] DiscordUser user)
-            {
-                await List(ctx, user, null);
-            }
-            [Command("list")]
-            public async Task List(CommandContext ctx, [Description("Channel to filter by")] DiscordChannel channel)
-            {
-                await List(ctx, null, channel);
-            }
-            [Command("list")]
-            public async Task List(CommandContext ctx, [Description("User to filter by")] DiscordUser user, [Description("Channel to filter by")] DiscordChannel channel)
-            {
-                throw new NotImplementedException();
-            }*/
             #endregion
         }
 
@@ -214,8 +236,6 @@ namespace Server.Discord
         public void HandlePostgressErrorCode(DbUpdateException ex, string code)
         {
             var sqlEx = ex.InnerException as PostgresException;
-            if (sqlEx != null)
-                logger.LogInformation(sqlEx.SqlState);
             if (sqlEx != null && sqlEx.SqlState == code)
                 return;
             else

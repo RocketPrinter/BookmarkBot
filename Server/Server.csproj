@@ -6,6 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="DSharpPlus.Interactivity" Version="4.1.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="5.0.8" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="5.0.8">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -13,9 +14,9 @@
     </PackageReference>
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="5.0.8" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational.Design" Version="1.1.6" />
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="5.6.3" />
-    <PackageReference Include="DSharpPlus" Version="4.1.0-nightly-00930" />
-    <PackageReference Include="DSharpPlus.CommandsNext" Version="4.1.0-nightly-00930" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.1.5" />
+    <PackageReference Include="DSharpPlus" Version="4.1.0" />
+    <PackageReference Include="DSharpPlus.CommandsNext" Version="4.1.0" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="5.0.7" />
   </ItemGroup>
 

@@ -1,10 +1,9 @@
 using DSharpPlus;
 using DSharpPlus.CommandsNext;
-using DSharpPlus.Entities;
+using DSharpPlus.Interactivity;
+using DSharpPlus.Interactivity.Extensions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,8 +12,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace Server
 {
@@ -59,6 +56,12 @@ namespace Server
             {
                 StringPrefixes = new[] { "b/" },
                 Services = x.GetRequiredService<IServiceProvider>()
+            }));
+
+            //Interactivity
+            services.AddSingleton(x => x.GetRequiredService<DiscordClient>().UseInteractivity(new DSharpPlus.Interactivity.InteractivityConfiguration()
+            {
+                
             }));
             #endregion
 
