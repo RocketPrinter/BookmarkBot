@@ -71,8 +71,8 @@ namespace Server
                 services.AddDbContext<Db.BookmarkContext>(options =>
                     options.UseNpgsql(Configuration.GetConnectionString("Bookmark")), contextLifetime:ServiceLifetime.Singleton);
 
-                services.AddSingleton(typeof(Discord.BookmarkFeatures));
-                warmUpTypes.Add(typeof(Discord.BookmarkFeatures));
+                services.AddSingleton(typeof(Discord.BookmarkFeature));
+                warmUpTypes.Add(typeof(Discord.BookmarkFeature));
             }
         }
 
@@ -100,7 +100,7 @@ namespace Server
             //register command modules
             var cnext = app.ApplicationServices.GetService<CommandsNextExtension>();
             if (Configuration.GetValue<bool>("BookmarkFeature"))
-                cnext.RegisterCommands<Discord.BookmarkFeatures.BookmarkCommands>();
+                cnext.RegisterCommands<Discord.BookmarkFeature.BookmarkCommands>();
 
             //warm up types
             foreach (Type type in warmUpTypes)
