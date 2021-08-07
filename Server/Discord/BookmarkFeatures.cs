@@ -21,12 +21,12 @@ namespace Server.Discord
         public class BookmarkCommands : BaseCommandModule
         {
             ILogger<BookmarkCommands> logger;
-            BookmarkFeatures bookmark;
+            BookmarkFeatures bf;
 
-            public BookmarkCommands(ILogger<BookmarkCommands> logger, BookmarkFeatures bookmark)
+            public BookmarkCommands(ILogger<BookmarkCommands> logger, BookmarkFeatures bf)
             {
                 this.logger = logger;
-                this.bookmark = bookmark;
+                this.bf = bf;
             }
 
             #region add
@@ -43,7 +43,7 @@ namespace Server.Discord
             [Command("add")]
             public async Task Add(CommandContext ctx, DiscordMessage message)
             {
-                if(bookmark.BookmarkAdd(ctx.User, message))
+                if(bf.BookmarkAdd(ctx.User, message))
                     await ctx.RespondAsync("Bookmark added! Use the list command to view your bookmarks!");
                 else
                     await ctx.RespondAsync("That message is already bookmarked!");
@@ -64,7 +64,7 @@ namespace Server.Discord
             [Command("remove")]
             public async Task Rem(CommandContext ctx, DiscordMessage message)
             {
-                if(bookmark.BookmarkRemove(ctx.User, message))
+                if(bf.BookmarkRemove(ctx.User, message))
                     await ctx.RespondAsync("Bookmark removed! Use the list command to view your bookmarks!");
                 else
                     await ctx.RespondAsync("That message is not bookmarked!");
@@ -78,7 +78,7 @@ namespace Server.Discord
             [Command("list"), Aliases("l"), Description("List all the bookmarks. You can filter the results using arguments.")]
             public async Task List(CommandContext ctx, [RemainingText] [Description(argumentsDescription)] string arguments)
             {
-                ulong userFilterId=0, channelFilterId=0, serverFilterId=0;
+                ulong userFilterId=0, channelFilterId=0, queryFilterId=0;
                 if (arguments != null && arguments != "")
                 {
                     //preprocess and split string
@@ -106,13 +106,15 @@ namespace Server.Discord
 
                             case "server:":
                                if (ulong.TryParse(tokens[i + 1], out result))
-                                   serverFilterId = result;
+                                   queryFilterId = result;
                                break;
                         }
                     }
 
-                    //testing
-                    await ctx.Message.RespondAsync($"user:{userFilterId}\nchannel:{channelFilterId}\nserver:{serverFilterId}");
+                    Bookmark[] queryResult = bf.BookmarkQuery(ctx.User, userFilterId, channelFilterId, queryFilterId);
+
+                    //todo: actually display the results
+                    await ctx.Message.RespondAsync($"Found {queryResult.Length} bookmarks");
                 }
             }
             #endregion
@@ -186,6 +188,7 @@ namespace Server.Discord
         /// <returns> false if a bookmark already existed, throws an exception if any other error occurs</returns>
         public bool BookmarkAdd(DiscordUser user, DiscordMessage msg)
         {
+            //todo: should also save a small part of the message to display later
             Bookmark b = new()
             {
                 UserSnowflake = user.Id,
@@ -211,7 +214,7 @@ namespace Server.Discord
         }
 
         /// <returns> false if the bookmark didn't exist, throws an exception if any other error occurs</returns>
-        public bool BookmarkRemove(DiscordUser user, DiscordMessage msg)//todo: this ugh
+        public bool BookmarkRemove(DiscordUser user, DiscordMessage msg)
         {
             //todo: use a sql query instead
             Bookmark b = context.Bookmarks.SingleOrDefault(b => b.MessageSnowflake == msg.Id && b.UserSnowflake == user.Id);
@@ -233,6 +236,21 @@ namespace Server.Discord
             return true;
         }
 
+        const int querySize = 10;
+
+        public Bookmark[] BookmarkQuery(DiscordUser user, ulong userFilterId, ulong channelFilterId, ulong guildFilterId)
+        {
+            //todo: pagination
+            IQueryable<Bookmark> query = context.Bookmarks
+                .Where(b => b.UserSnowflake == user.Id);
+            
+            if (userFilterId != 0)    query = query.Where(b => b.UserSnowflake == userFilterId);
+            if (channelFilterId != 0) query = query.Where(b => b.ChannelSnowflake == channelFilterId);
+            if (guildFilterId != 0)   query = query.Where(b => b.GuildSnowFlake == guildFilterId);
+
+            return query.ToArray();
+        }
+
         public void HandlePostgressErrorCode(DbUpdateException ex, string code)
         {
             var sqlEx = ex.InnerException as PostgresException;
@@ -241,7 +259,6 @@ namespace Server.Discord
             else
                 throw ex;
         }
-
         #endregion
     }
 }
