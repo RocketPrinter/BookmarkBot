@@ -113,6 +113,7 @@ namespace Server.Discord
 
                     Bookmark[] queryResult = bf.BookmarkQuery(ctx.User, userFilterId, channelFilterId, queryFilterId);
 
+
                     //todo: actually display the results
                     await ctx.Message.RespondAsync($"Found {queryResult.Length} bookmarks");
                 }
@@ -195,7 +196,8 @@ namespace Server.Discord
                 GuildSnowFlake = msg.Channel.GuildId,
                 ChannelSnowflake = msg.ChannelId,
                 MessageSnowflake = msg.Id,
-                AuthorSnowflake = msg.Author.Id
+                AuthorSnowflake = msg.Author.Id,
+                MessageSummary = msg.Content.Substring(0, Math.Min( msg.Content.Length,50)) //we take more than we need to make sure  we have enough
             };
             context.Add(b);
 

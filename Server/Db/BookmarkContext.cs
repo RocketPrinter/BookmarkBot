@@ -22,7 +22,9 @@ namespace Server.Db
             public ulong ChannelSnowflake { get; set; }
             public ulong MessageSnowflake { get; set; }
 
-            public ulong AuthorSnowflake { get; set; } 
+            public ulong AuthorSnowflake { get; set; }
+            [MaxLength(50)]
+            public string MessageSummary { get; set; }
         }
         #endregion
 
