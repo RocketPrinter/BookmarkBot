@@ -135,17 +135,16 @@ namespace Server.Discord
             return true;
         }
 
-        const int querySize = 10;
-
-        public Bookmark[] BookmarkQuery(DiscordUser user, ulong userFilterId, ulong channelFilterId, ulong guildFilterId)
+        public Bookmark[] BookmarkQuery(DiscordUser user, int querySize, ulong filterUserId, ulong filterChannelId, ulong filterGuildId)
         {
             //todo: pagination
             IQueryable<Bookmark> query = context.Bookmarks
-                .Where(b => b.UserSnowflake == user.Id);
+                .Where(b => b.UserSnowflake == user.Id)
+                .OrderByDescending(b => b.BookmarkId);
             
-            if (userFilterId != 0)    query = query.Where(b => b.UserSnowflake == userFilterId);
-            if (channelFilterId != 0) query = query.Where(b => b.ChannelSnowflake == channelFilterId);
-            if (guildFilterId != 0)   query = query.Where(b => b.GuildSnowFlake == guildFilterId);
+            if (filterUserId != 0)    query = query.Where(b => b.AuthorSnowflake == filterUserId);
+            if (filterChannelId != 0) query = query.Where(b => b.ChannelSnowflake == filterChannelId);
+            if (filterGuildId != 0)   query = query.Where(b => b.GuildSnowFlake == filterGuildId);
 
             return query.ToArray();
         }
