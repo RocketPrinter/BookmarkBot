@@ -61,7 +61,7 @@ namespace Server
             //Interactivity
             services.AddSingleton(x => x.GetRequiredService<DiscordClient>().UseInteractivity(new DSharpPlus.Interactivity.InteractivityConfiguration()
             {
-                
+                Timeout = new TimeSpan(0, 5, 0)
             }));
             #endregion
 
@@ -100,7 +100,7 @@ namespace Server
             //register command modules
             var cnext = app.ApplicationServices.GetService<CommandsNextExtension>();
             if (Configuration.GetValue<bool>("BookmarkFeature"))
-                cnext.RegisterCommands<Discord.BookmarkFeature.BookmarkCommands>();
+                cnext.RegisterCommands<Discord.BookmarkCommands>();
 
             //warm up types
             foreach (Type type in warmUpTypes)

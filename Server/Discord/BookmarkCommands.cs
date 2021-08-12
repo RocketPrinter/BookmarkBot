@@ -7,26 +7,26 @@ using DSharpPlus.Entities;
 using static Server.Db.BookmarkContext;
 using System.Collections.Generic;
 using DSharpPlus;
+using DSharpPlus.Interactivity;
+using DSharpPlus.Interactivity.Extensions;
 using System.Linq;
 
 namespace Server.Discord
 {
-    public partial class BookmarkFeature
+    public class BookmarkCommands : BaseCommandModule
     {
-        public class BookmarkCommands : BaseCommandModule
+        ILogger<BookmarkCommands> logger;
+        BookmarkFeature bf;
+        DiscordClient client;
+
+        public BookmarkCommands(ILogger<BookmarkCommands> logger, BookmarkFeature bf, DiscordClient client)
         {
-            ILogger<BookmarkCommands> logger;
-            BookmarkFeature bf;
-            DiscordClient client;
+            this.logger = logger;
+            this.bf = bf;
+            this.client = client;
+        }
 
-            public BookmarkCommands(ILogger<BookmarkCommands> logger, BookmarkFeature bf, DiscordClient client)
-            {
-                this.logger = logger;
-                this.bf = bf;
-                this.client = client;
-            }
-
-            #region add
+        #region add
             [Command("add"), Aliases("a"), Description("Bookmark a message by replying to it with this command or pasting the message id. You an also react with 🔖 for the same result.")]
             public async Task Add(CommandContext ctx)
             {
@@ -47,7 +47,7 @@ namespace Server.Discord
             }
             #endregion
 
-            #region rem
+        #region rem
             [Command("remove"), Aliases("rem", "r"), Description("Remove a bookmark from a message by replying to it with this command or pasting the message id.  Remove this reaction 🔖 for the same result.")]
             public async Task Rem(CommandContext ctx)
             {
@@ -68,19 +68,19 @@ namespace Server.Discord
             }
             #endregion
 
-            #region list
+        #region list
 
-            const string argumentsDescription = "Optional arguments: `user:<mention or id>` `channel:<mention or id>` `server:<id>` `compact:<true/false>`\n You can use `this` instead of an id.";
-            const int embedMsgCount = 5, compactEmbedMsgCount = 20;
+        const string argumentsDescription = "Optional arguments: `user:<mention or id>` `channel:<mention or id>` `server:<id>` `compact:<true/false>`\n You can use `this` instead of an id.";
+        const int embedMsgCount = 5, compactEmbedMsgCount = 20;
 
-            [Command("list"), Aliases("l"), Description("List all the bookmarks. You can filter the results using arguments.")]
-            public async Task List(CommandContext ctx, [RemainingText] [Description(argumentsDescription)] string arguments)
-            {
-                ulong filterUserId=0, filterChannelId=0, filterGuildId=0;
-                bool compactEmbed=false;
-            
-                //arg parsing
-                if (arguments != null && arguments != "")
+        [Command("list"), Aliases("l"), Description("List all the bookmarks. You can filter the results using arguments.")]
+        public async Task List(CommandContext ctx, [RemainingText] [Description(argumentsDescription)] string arguments)
+        {
+            ulong filterUserId=0, filterChannelId=0, filterGuildId=0;
+            bool compactEmbed=false;
+        
+            //arg parsing
+            if (arguments != null && arguments != "")
                 {
                     //preprocess and split string
                     string[] tokens = arguments.Replace(":", ": ").Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
@@ -139,66 +139,169 @@ namespace Server.Discord
                         }
                     }
                 }
-                
-                //getting bookmarks
-                Bookmark[] queryResult = bf.BookmarkQuery(ctx.User, compactEmbed?compactEmbedMsgCount:embedMsgCount, filterUserId, filterChannelId, filterGuildId);
+            
+            //getting bookmarks
+            Bookmark[] queryResult = bf.BookmarkQuery(ctx.User, compactEmbed?compactEmbedMsgCount:embedMsgCount, filterUserId, filterChannelId, filterGuildId);
 
-                if (queryResult.Length == 0)
+            if (queryResult.Length == 0)
+            {
+                await ctx.Message.RespondAsync("No bookmarks found!");
+                return;
+            }
+
+            // resolve all authors in the query
+            // linq is fun!
+            var users = Task.WhenAll(
+                queryResult.Select(bookmark => bookmark.AuthorSnowflake).Distinct()
+                .Select(async id => await client.GetUserAsync(id)).ToArray())
+                .Result
+                .ToDictionary(user=> user.Id);
+            
+            //build message
+            DiscordMessageBuilder builder = new();
+            builder.WithContent($"Showing {queryResult.Length} bookmarks:");
+
+            if (compactEmbed)
+            {
+                DiscordEmbedBuilder embedBuilder = new()
                 {
-                    await ctx.Message.RespondAsync("No bookmarks found!");
+                    Color = DiscordColor.Blurple
+                };
+
+                //generat embed
+                for (int i=0;i<queryResult.Length;i++)
+                {
+                    Bookmark bookmark = queryResult[i];
+                    embedBuilder.AddField( (i+1).ToString() + ") " + users[bookmark.AuthorSnowflake].Username, bookmark.MessageSummary + (bookmark.MessageSummary.Length == 50 ? "..." : ""), false);
+                }
+                builder.WithEmbed(embedBuilder);
+
+                builder.AddComponents(new DiscordSelectComponent("compactListSelector", "Expand a message", Enumerable.Range(0, queryResult.Length).Select(i=> new DiscordSelectComponentOption($"Expand {i+1}",i.ToString()))));
+;            }
+            else
+            {
+                //generate embed
+                for (int i=0;i<queryResult.Length;i++)
+                {
+                    builder.AddEmbed(GenerateFullBookmarkEmbed(queryResult[i], users[queryResult[i].AuthorSnowflake]) );
+                }    
+            }
+
+            //send message
+            var msg = await ctx.RespondAsync(builder);
+
+            //compact list selector
+            if(compactEmbed)
+            {
+                logger.LogInformation("dropdown activated");
+             
+                while (true)
+                {
+                    // token: default needs to be added to prevent ambigous function error
+                    var interactivityResult = await msg.WaitForSelectAsync(ctx.User, "compactListSelector", token: default);
+                    if (interactivityResult.TimedOut)
+                        break;
+
+                    int nr = int.Parse(interactivityResult.Result.Values.First());
+                    if (nr < 0 || nr >= queryResult.Length)
+                        continue;
+
+                    //reply with the full version of the bookmark
+                    _ = Task.Run(async () =>
+                    {
+                        var response = await msg.RespondAsync(
+                            new DiscordMessageBuilder()
+                            .WithEmbed(GenerateFullBookmarkEmbed(queryResult[nr], users[queryResult[nr].AuthorSnowflake]))
+                            .AddComponents(ComponentUtils.destroyButton));
+
+                        response.OnDestroyButton();
+                    });
+                }
+
+                logger.LogInformation("dropdown disabled");
+            }
+        }
+
+        #region utils
+        DiscordEmbedBuilder GenerateFullBookmarkEmbed(Bookmark bookmark, DiscordUser author)
+        {
+            DiscordEmbedBuilder embedBuilder = new()
+            {
+                Title = "Go to " + (bookmark.GuildSnowFlake != null ? client.Guilds[bookmark.GuildSnowFlake.Value]?.Name : "@me"),
+                Url = $"https://discord.com/channels/{ bookmark.GuildSnowFlake.Value.ToString() ?? "@me"}/{bookmark.ChannelSnowflake}/{bookmark.MessageSnowflake}",
+                Color = DiscordColor.Blurple
+            };
+            //on desktop the url will open discord in browser so it's not a perfect solution
+            embedBuilder.WithAuthor(author.Username, $"https://discord.com/users/{author.Id}", author.AvatarUrl);
+            embedBuilder.WithFooter(bookmark.MessageSummary + (bookmark.MessageSummary.Length == 50 ? "..." : ""));
+            return embedBuilder;
+        }
+        #endregion
+
+        #endregion
+    }
+
+}
+
+public static class ComponentUtils
+{
+    public static void OnButtonInteraction(this DiscordMessage msg, string id, Action<InteractivityResult<DSharpPlus.EventArgs.ComponentInteractionCreateEventArgs>> action, DiscordUser user = null, bool repeat = false)
+    {
+        _ = Task.Run(async () =>
+        {
+            while (true)
+            {
+                var result = await msg.WaitForButtonAsync(id,timeoutOverride:null);
+                if (result.TimedOut)
+                    return;
+                if (user == null || result.Result.User == user)
+                {
+                    action(result);
+                    if (repeat == false)
+                        return;
+                }
+            }
+        });
+    }
+
+    public static void OnSelectInteraction(this DiscordMessage msg, string id, Action<InteractivityResult<DSharpPlus.EventArgs.ComponentInteractionCreateEventArgs>> action, DiscordUser user = null, bool repeat = false)
+    {
+        _ = Task.Run(async () =>
+        {
+            while (true)
+            {
+                var result = await msg.WaitForSelectAsync(id, timeoutOverride: null);
+                if (result.TimedOut)
+                    return;
+                if (user == null || result.Result.User == user)
+                {
+                    action(result);
+                    if (repeat == false)
+                        return;
+                }
+            }
+        });
+    }
+
+    // red "destroy" button
+    public static readonly DiscordButtonComponent destroyButton = new DiscordButtonComponent(ButtonStyle.Danger, "destroy", "", emoji: new DiscordComponentEmoji("✖️"));
+
+    // waits for a button with the id "destroy" and then deletes the message
+    public static void OnDestroyButton(this DiscordMessage msg, DiscordUser user = null)
+    {
+        _ = Task.Run(async () =>
+        {
+            while (true)
+            {
+                var interactivityResult = await msg.WaitForButtonAsync("destroy", null);
+                if (interactivityResult.TimedOut)
+                    return;
+                if (user == null || user == interactivityResult.Result.User)
+                {
+                    await msg.DeleteAsync();
                     return;
                 }
-
-                // resolve all authors in the query
-                // linq is fun!
-                var users = Task.WhenAll(
-                    queryResult.Select(bookmark => bookmark.AuthorSnowflake).Distinct()
-                    .Select(async id => await client.GetUserAsync(id)).ToArray())
-                    .Result
-                    .ToDictionary(user=> user.Id);
-                
-                //build message
-                DiscordMessageBuilder builder = new();
-                builder.WithContent($"Showing {queryResult.Length} bookmarks:");
-
-                if (compactEmbed)
-                {
-                    DiscordEmbedBuilder embedBuilder = new();
-
-                    for (int i=0;i<queryResult.Length;i++)
-                    {
-                        Bookmark bookmark = queryResult[i];
-                        embedBuilder.AddField( (i+1).ToString() + ") " + users[bookmark.AuthorSnowflake].Username, bookmark.MessageSummary + (bookmark.MessageSummary.Length == 50 ? "..." : ""), false);
-                    }
-
-                    builder.WithEmbed(embedBuilder);
-                }
-                else
-                {
-                     
-                    //generate embeds
-                    for (int i=0;i<queryResult.Length;i++)
-                    {
-                        Bookmark bookmark = queryResult[i];
-                        DiscordUser author = users[bookmark.AuthorSnowflake];
-
-                        DiscordEmbedBuilder embedBuilder = new()
-                        {
-                            Title = "Go to " + (bookmark.GuildSnowFlake != null ? client.Guilds[bookmark.GuildSnowFlake.Value]?.Name : "@me"),
-                            Url = $"https://discord.com/channels/{ bookmark.GuildSnowFlake.Value.ToString() ?? "@me"}/{bookmark.ChannelSnowflake}/{bookmark.MessageSnowflake}",
-                            Color = DiscordColor.Blurple
-                        };
-                        //on desktop the url will open discord in browser so it's not a perfect solution
-                        embedBuilder.WithAuthor(author.Username, $"https://discord.com/users/{author.Id}", author.AvatarUrl);
-                        embedBuilder.WithFooter(bookmark.MessageSummary + (bookmark.MessageSummary.Length==50?"...":""));
-
-                        builder.AddEmbed(embedBuilder);
-                    }    
-                }
-
-                await ctx.RespondAsync(builder);
             }
-            #endregion
-        }
+        });
     }
 }
