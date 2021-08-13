@@ -193,32 +193,20 @@ namespace Server.Discord
             //compact list selector
             if(compactEmbed)
             {
-                logger.LogInformation("dropdown activated");
-             
-                while (true)
+                msg.OnSelectInteraction("compactListSelector", user:ctx.User,repeat:true, predicate: async (result)=>
                 {
-                    // token: default needs to be added to prevent ambigous function error
-                    var interactivityResult = await msg.WaitForSelectAsync(ctx.User, "compactListSelector", token: default);
-                    if (interactivityResult.TimedOut)
-                        break;
-
-                    int nr = int.Parse(interactivityResult.Result.Values.First());
+                    int nr = int.Parse(result.Result.Values.First());
                     if (nr < 0 || nr >= queryResult.Length)
-                        continue;
+                        return true;
 
-                    //reply with the full version of the bookmark
-                    _ = Task.Run(async () =>
-                    {
-                        var response = await msg.RespondAsync(
-                            new DiscordMessageBuilder()
-                            .WithEmbed(GenerateFullBookmarkEmbed(queryResult[nr], users[queryResult[nr].AuthorSnowflake]))
-                            .AddComponents(ComponentUtils.destroyButton));
+                     var response = await msg.RespondAsync(
+                         new DiscordMessageBuilder()
+                         .WithEmbed(GenerateFullBookmarkEmbed(queryResult[nr], users[queryResult[nr].AuthorSnowflake]))
+                         .AddComponents(ComponentUtils.destroyButton));
 
-                        response.OnDestroyButton();
-                    });
-                }
-
-                logger.LogInformation("dropdown disabled");
+                     response.OnDestroyButton();
+                    return true;
+                });
             }
         }
 
@@ -239,13 +227,26 @@ namespace Server.Discord
         #endregion
 
         #endregion
+
+        [Command("test")][Hidden]
+        public async Task Test(CommandContext ctx)
+        {
+            var msg = await ctx.Message.RespondAsync(
+                new DiscordMessageBuilder()
+                .WithContent("test")
+                .AddComponents(ComponentUtils.destroyButton));
+            msg.OnDestroyButton();
+        }
     }
 
 }
 
 public static class ComponentUtils
 {
-    public static void OnButtonInteraction(this DiscordMessage msg, string id, Action<InteractivityResult<DSharpPlus.EventArgs.ComponentInteractionCreateEventArgs>> action, DiscordUser user = null, bool repeat = false)
+    public delegate Task<bool> InteractionResultPredicate(InteractivityResult<DSharpPlus.EventArgs.ComponentInteractionCreateEventArgs> result);
+
+    // if predicate returns false it won't listen to further interractions even if repeat is true
+    public static void OnButtonInteraction(this DiscordMessage msg, string id, InteractionResultPredicate predicate, DiscordUser user = null, bool repeat = false)
     {
         _ = Task.Run(async () =>
         {
@@ -256,15 +257,16 @@ public static class ComponentUtils
                     return;
                 if (user == null || result.Result.User == user)
                 {
-                    action(result);
-                    if (repeat == false)
+                    bool b = await predicate(result);
+                    if (repeat == false || b == false)
                         return;
                 }
             }
         });
     }
 
-    public static void OnSelectInteraction(this DiscordMessage msg, string id, Action<InteractivityResult<DSharpPlus.EventArgs.ComponentInteractionCreateEventArgs>> action, DiscordUser user = null, bool repeat = false)
+    // if predicate returns false it won't listen to further interractions even if repeat is true
+    public static void OnSelectInteraction(this DiscordMessage msg, string id, InteractionResultPredicate predicate, DiscordUser user = null, bool repeat = false)
     {
         _ = Task.Run(async () =>
         {
@@ -275,8 +277,8 @@ public static class ComponentUtils
                     return;
                 if (user == null || result.Result.User == user)
                 {
-                    action(result);
-                    if (repeat == false)
+                    bool b = await predicate(result);
+                    if (repeat == false || b == false)
                         return;
                 }
             }
