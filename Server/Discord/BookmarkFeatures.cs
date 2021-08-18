@@ -13,6 +13,9 @@ using Npgsql;
 using Microsoft.EntityFrameworkCore;
 using static Server.Db.BookmarkContext;
 
+using DSharpPlus.Interactivity;
+using DSharpPlus.Interactivity.Extensions;
+
 namespace Server.Discord
 {
     public partial class BookmarkFeature
@@ -22,7 +25,7 @@ namespace Server.Discord
         ILogger<BookmarkFeature> logger;
         Db.BookmarkContext context;
 
-        public BookmarkFeature(DiscordClient client, ILogger<BookmarkFeature> logger, Db.BookmarkContext context, CommandsNextExtension commands)
+        public BookmarkFeature(DiscordClient client, ILogger<BookmarkFeature> logger, Db.BookmarkContext context, CommandsNextExtension commands, InteractivityExtension interactivity)
         {
             this.client = client;
             this.logger = logger;
@@ -49,6 +52,7 @@ namespace Server.Discord
                 if (e.Message.Author == null)
                 {
                     //fix weird caching issue where author is null
+                    //todo: null ref error when bookmarking a msg in a dm
                     msg = await e.Message.Channel.GetMessageAsync(e.Message.Id);
                 }
                 else

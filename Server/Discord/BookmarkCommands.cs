@@ -10,6 +10,8 @@ using DSharpPlus;
 using DSharpPlus.Interactivity;
 using DSharpPlus.Interactivity.Extensions;
 using System.Linq;
+using DSharpPlus.EventArgs;
+using System.Collections;
 
 namespace Server.Discord
 {
@@ -193,9 +195,9 @@ namespace Server.Discord
             //compact list selector
             if(compactEmbed)
             {
-                msg.OnSelectInteraction("compactListSelector", user:ctx.User,repeat:true, predicate: async (result)=>
+                msg.OnSelectInteraction( (args) => args.Id == "compactListSelector" && args.User == ctx.User, async (args) =>
                 {
-                    int nr = int.Parse(result.Result.Values.First());
+                    int nr = int.Parse(args.Result.Values.First());
                     if (nr < 0 || nr >= queryResult.Length)
                         return true;
 
@@ -204,7 +206,7 @@ namespace Server.Discord
                          .WithEmbed(GenerateFullBookmarkEmbed(queryResult[nr], users[queryResult[nr].AuthorSnowflake]))
                          .AddComponents(ComponentUtils.destroyButton));
 
-                     response.OnDestroyButton();
+                    response.OnDestroyButton();
                     return true;
                 });
             }
@@ -235,6 +237,7 @@ namespace Server.Discord
                 new DiscordMessageBuilder()
                 .WithContent("test")
                 .AddComponents(ComponentUtils.destroyButton));
+
             msg.OnDestroyButton();
         }
     }
@@ -243,48 +246,39 @@ namespace Server.Discord
 
 public static class ComponentUtils
 {
-    public delegate Task<bool> InteractionResultPredicate(InteractivityResult<DSharpPlus.EventArgs.ComponentInteractionCreateEventArgs> result);
-
-    // if predicate returns false it won't listen to further interractions even if repeat is true
-    public static void OnButtonInteraction(this DiscordMessage msg, string id, InteractionResultPredicate predicate, DiscordUser user = null, bool repeat = false)
+    #region general use extensions
+    // if action returns false interactivity will stop listening for new button interactions
+    public static void OnButtonInteraction(this DiscordMessage msg, Func<ComponentInteractionCreateEventArgs, bool> predicate, Func<InteractivityResult<ComponentInteractionCreateEventArgs>, Task<bool>> action)
     {
         _ = Task.Run(async () =>
         {
             while (true)
             {
-                var result = await msg.WaitForButtonAsync(id,timeoutOverride:null);
-                if (result.TimedOut)
-                    return;
-                if (user == null || result.Result.User == user)
-                {
-                    bool b = await predicate(result);
-                    if (repeat == false || b == false)
-                        return;
-                }
+                var result = await msg.WaitForButtonAsync(predicate);
+
+                if (result.TimedOut || await action(result) == false)
+                    break;
             }
         });
     }
 
-    // if predicate returns false it won't listen to further interractions even if repeat is true
-    public static void OnSelectInteraction(this DiscordMessage msg, string id, InteractionResultPredicate predicate, DiscordUser user = null, bool repeat = false)
+    // if action returns false interactivity will stop listening for new select interactions
+    public static void OnSelectInteraction(this DiscordMessage msg, Func<ComponentInteractionCreateEventArgs, bool> predicate, Func<InteractivityResult<ComponentInteractionCreateEventArgs>, Task<bool>> action)
     {
         _ = Task.Run(async () =>
         {
             while (true)
             {
-                var result = await msg.WaitForSelectAsync(id, timeoutOverride: null);
-                if (result.TimedOut)
-                    return;
-                if (user == null || result.Result.User == user)
-                {
-                    bool b = await predicate(result);
-                    if (repeat == false || b == false)
-                        return;
-                }
+                var result = await msg.WaitForSelectAsync(predicate);
+
+                if (result.TimedOut || await action(result) == false)
+                    break;
             }
         });
     }
+    #endregion
 
+    #region Destroy button
     // red "destroy" button
     public static readonly DiscordButtonComponent destroyButton = new DiscordButtonComponent(ButtonStyle.Danger, "destroy", "", emoji: new DiscordComponentEmoji("✖️"));
 
@@ -293,17 +287,13 @@ public static class ComponentUtils
     {
         _ = Task.Run(async () =>
         {
-            while (true)
-            {
-                var interactivityResult = await msg.WaitForButtonAsync("destroy", null);
-                if (interactivityResult.TimedOut)
-                    return;
-                if (user == null || user == interactivityResult.Result.User)
-                {
-                    await msg.DeleteAsync();
-                    return;
-                }
-            }
+            var result = await msg.WaitForButtonAsync(
+                (args) => args.Id == "destroy" && (user == null || args.User == user)
+                , null);
+            if (result.TimedOut)
+                return;
+            await msg.DeleteAsync();
         });
     }
+    #endregion
 }
