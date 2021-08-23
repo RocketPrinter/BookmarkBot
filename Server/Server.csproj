@@ -15,8 +15,8 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="5.0.9" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational.Design" Version="1.1.6" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.1.5" />
-    <PackageReference Include="DSharpPlus" Version="4.2.0-nightly-00968" />
-    <PackageReference Include="DSharpPlus.CommandsNext" Version="4.2.0-nightly-00966" />
+    <PackageReference Include="DSharpPlus" Version="4.2.0-nightly-00969" />
+    <PackageReference Include="DSharpPlus.CommandsNext" Version="4.2.0-nightly-00969" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="5.0.7" />
   </ItemGroup>
 
