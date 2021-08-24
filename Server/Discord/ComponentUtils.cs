@@ -20,7 +20,10 @@ public static class ComponentUtils
                 var result = await msg.WaitForButtonAsync(predicate);
 
                 if (result.TimedOut || await action(result) == false)
+                {
+                    System.Diagnostics.Trace.WriteLine($"button timed out");
                     break;
+                }
             }
         });
     }
@@ -43,7 +46,7 @@ public static class ComponentUtils
 
     #region Destroy button
     // generate red "destroy" button
-    public static DiscordButtonComponent GetDestroyButton(string salt) => new DiscordButtonComponent(ButtonStyle.Danger, "destroy" + salt, "", emoji: new DiscordComponentEmoji("✖️"));
+    public static DiscordButtonComponent GetDestroyButton(string salt) => new DiscordButtonComponent(ButtonStyle.Danger, "destroyButton" + salt, "", emoji: new DiscordComponentEmoji("✖️"));
 
     // waits for a button with the id "destroy" and then deletes the message
     public static void OnDestroyButton(this DiscordMessage msg, string salt, DiscordUser user = null)
@@ -51,10 +54,14 @@ public static class ComponentUtils
         _ = Task.Run(async () =>
         {
             var result = await msg.WaitForButtonAsync(
-                (args) => args.Id == "destroyButton" + salt && (user == null || args.User == user)
+                (args) => 
+                args.Id == "destroyButton" + salt && (user == null || args.User == user)
                 , null);
             if (result.TimedOut)
+            {
+                System.Diagnostics.Trace.WriteLine($"destroyButton{salt} timed out");
                 return;
+            }
             await msg.DeleteAsync();
         });
     }

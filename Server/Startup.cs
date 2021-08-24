@@ -61,7 +61,7 @@ namespace Server
             //Interactivity
             services.AddSingleton(x => x.GetRequiredService<DiscordClient>().UseInteractivity(new DSharpPlus.Interactivity.InteractivityConfiguration()
             {
-                //Timeout = new TimeSpan(0, 0, 15)
+                Timeout = new TimeSpan(0, 0, 30)
             }));
             #endregion
 

@@ -77,7 +77,8 @@ namespace Server.Discord
         public async Task List(CommandContext ctx, [RemainingText][Description(argumentsDescription)] string arguments)
         {
             ulong filterUserId = 0, filterChannelId = 0, filterGuildId = 0;
-            bool compactEmbed = false;
+            bool compactEmbed = true;
+            string salt = ctx.Message.ToString();
 
             //arg parsing
             if (arguments != null && arguments != "")
@@ -176,8 +177,7 @@ namespace Server.Discord
                 }
                 builder.WithEmbed(embedBuilder);
 
-                builder.AddComponents(new DiscordSelectComponent("compactListSelector", "Expand a message", Enumerable.Range(0, queryResult.Length).Select(i => new DiscordSelectComponentOption($"Expand {i + 1}", i.ToString()))));
-                ;
+                builder.AddComponents(new DiscordSelectComponent("compactListSelector" + salt, "Expand a message", Enumerable.Range(0, queryResult.Length).Select(i => new DiscordSelectComponentOption($"Expand {i + 1}", i.ToString()))));
             }
             else
             {
@@ -194,18 +194,25 @@ namespace Server.Discord
             //compact list selector
             if (compactEmbed)
             {
-                msg.OnSelectInteraction((args) => args.Id == "compactListSelector" && args.User == ctx.User, async (args) =>
+                msg.OnSelectInteraction((args) => 
+                args.Id == "compactListSelector" + salt && args.User == ctx.User, 
+                async (args) =>
                 {
-                    int nr = int.Parse(args.Result.Values.First());
-                    if (nr < 0 || nr >= queryResult.Length)
+                    //int nr = int.Parse(args.Result.Values.First());
+                    if ( args.Result.Values.Length != 1 
+                    || int.TryParse(args.Result.Values.First(), out int nr) == false
+                    || nr < 0 || nr >= queryResult.Length)
                         return true;
+
+                    string salt = args.Result.Interaction.Id.ToString();
 
                     var response = await args.Result.Interaction.CreateFollowupMessageAsync(
                          new DiscordFollowupMessageBuilder()
                          .AddEmbed(GenerateFullBookmarkEmbed(queryResult[nr], users[queryResult[nr].AuthorSnowflake]))
-                         .AddComponents(ComponentUtils.destroyButton));
+                         .AddComponents(ComponentUtils.GetDestroyButton(salt))
+                         );
                     logger.LogInformation("response sent");
-                    response.OnDestroyButton();
+                    //response.OnDestroyButton(salt);
 
                     return true;
                 });
@@ -235,33 +242,53 @@ namespace Server.Discord
         public async Task Test(CommandContext ctx)
         {
             string salt = ctx.Message.Id.ToString();
-            string buttonTestId = "buttonTest" + salt;
-            string selectId = "selectTest" + salt;
 
             var msg = await ctx.Message.RespondAsync(
                 new DiscordMessageBuilder()
                 .WithContent("test")
                 .AddComponents(ComponentUtils.GetDestroyButton(salt))
-                .AddComponents(new DiscordButtonComponent(ButtonStyle.Primary, buttonTestId, "Press me!"))
-                .AddComponents(new DiscordSelectComponent(selectId, "Pick an option!", Enumerable.Range(0, 10).Select(x => new DiscordSelectComponentOption(x.ToString(), x.ToString()))))
+                .AddComponents(new DiscordButtonComponent(ButtonStyle.Primary, "buttonTest1" + salt, "Press me!"))
+                .AddComponents(new DiscordButtonComponent(ButtonStyle.Primary, "buttonTest2" + salt, "Press me for response!"))
+                .AddComponents(new DiscordSelectComponent("selectTest" + salt, "Pick an option!", Enumerable.Range(0, 10).Select(x => new DiscordSelectComponentOption(x.ToString(), x.ToString()))))
                 );
 
             msg.OnDestroyButton(salt);
+            
+            //msg.OnButtonInteraction(args =>
+            //    args.Id == "buttonTest1" + salt, async args =>
+            //{
+            //    logger.LogInformation("Pressed button 1");
+            //    await args.Result.Interaction.CreateResponseAsync(InteractionResponseType.DeferredMessageUpdate);
+            //    return true;
+            //});
 
+            
+            //while (true)
+            //{
+            //    var result = await msg.WaitForButtonAsync("buttonTest2" + salt);
+            //    var response = await result.Result.Interaction.CreateFollowupMessageAsync(
+            //            new DiscordFollowupMessageBuilder()
+            //           .WithContent("owo")
+            //           );
+            //}
 
-            msg.OnButtonInteraction(args => args.Id == buttonTestId, async args =>
+            msg.OnButtonInteraction(args =>
+            args.Id == "buttonTest2" + salt, async args =>
             {
-                logger.LogInformation("Pressed button");
-                await args.Result.Interaction.CreateResponseAsync(InteractionResponseType.DeferredMessageUpdate);
+                logger.LogInformation("Pressed button 2");
+                await args.Result.Interaction.CreateResponseAsync(InteractionResponseType.ChannelMessageWithSource,
+                    new DiscordInteractionResponseBuilder()
+                    .WithContent("owo")
+                    );
                 return true;
             });
 
-            msg.OnSelectInteraction(args => args.Id == selectId, async args =>
-            {
-                logger.LogInformation($"Selected {args.Result.Values}");
-                await args.Result.Interaction.CreateResponseAsync(InteractionResponseType.DeferredMessageUpdate);
-                return true;
-            });
+            //msg.OnSelectInteraction(args => args.Id == "selectTest" + salt, async args =>
+            //{
+            //    logger.LogInformation($"Selected {args.Result.Values.First()}");
+            //    await args.Result.Interaction.CreateResponseAsync(InteractionResponseType.DeferredMessageUpdate);
+            //    return true;
+            //});
         }
     }
 
