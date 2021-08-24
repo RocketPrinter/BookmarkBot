@@ -30,11 +30,11 @@ namespace Server
         {
             #region API
             //REST API and Swagger
-            services.AddControllers();
-            services.AddSwaggerGen(c =>
-            {
-                c.SwaggerDoc("v1", new OpenApiInfo { Title = "NotEnoughEmotes", Version = "v1" });
-            });
+            //services.AddControllers();
+            //services.AddSwaggerGen(c =>
+            //{
+            //    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Bookmarkbot", Version = "v1" });
+            //});
             #endregion
 
             #region Bot
@@ -61,7 +61,7 @@ namespace Server
             //Interactivity
             services.AddSingleton(x => x.GetRequiredService<DiscordClient>().UseInteractivity(new DSharpPlus.Interactivity.InteractivityConfiguration()
             {
-                Timeout = new TimeSpan(0, 0, 15)
+                //Timeout = new TimeSpan(0, 0, 15)
             }));
             #endregion
 
@@ -79,23 +79,23 @@ namespace Server
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            if (env.IsDevelopment())
-            {
-                app.UseDeveloperExceptionPage();
-                app.UseSwagger();
-                app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "API"));
-            }
-
-            app.UseHttpsRedirection();
-
-            app.UseRouting();
-
-            app.UseAuthorization();
-
-            app.UseEndpoints(endpoints =>
-            {
-                endpoints.MapControllers();
-            });
+            //if (env.IsDevelopment())
+            //{
+            //    app.UseDeveloperExceptionPage();
+            //    app.UseSwagger();
+            //    app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "API"));
+            //}
+            //
+            //app.UseHttpsRedirection();
+            //
+            //app.UseRouting();
+            //
+            //app.UseAuthorization();
+            //
+            //app.UseEndpoints(endpoints =>
+            //{
+            //    endpoints.MapControllers();
+            //});
 
             //register command modules
             var cnext = app.ApplicationServices.GetService<CommandsNextExtension>();
