@@ -73,12 +73,13 @@ namespace Server.Discord
         const string argumentsDescription = "Optional arguments: `user:<mention or id>` `channel:<mention or id>` `server:<id>` `compact:<true/false>`\n You can use `this` instead of an id.";
         const int embedMsgCount = 5, compactEmbedMsgCount = 20;
 
+        //todo: fully implement compact mode work when interactivity works
         [Command("list"), Aliases("l"), Description("List all the bookmarks. You can filter the results using arguments.")]
         public async Task List(CommandContext ctx, [RemainingText][Description(argumentsDescription)] string arguments)
         {
             ulong filterUserId = 0, filterChannelId = 0, filterGuildId = 0;
             bool compactEmbed = true;
-            string salt = ctx.Message.ToString();
+            //string salt = ctx.Message.ToString();
 
             //arg parsing
             if (arguments != null && arguments != "")
@@ -177,7 +178,7 @@ namespace Server.Discord
                 }
                 builder.WithEmbed(embedBuilder);
 
-                builder.AddComponents(new DiscordSelectComponent("compactListSelector" + salt, "Expand a message", Enumerable.Range(0, queryResult.Length).Select(i => new DiscordSelectComponentOption($"Expand {i + 1}", i.ToString()))));
+                //builder.AddComponents(new DiscordSelectComponent("compactListSelector" + salt, "Expand a message", Enumerable.Range(0, queryResult.Length).Select(i => new DiscordSelectComponentOption($"Expand {i + 1}", i.ToString()))));
             }
             else
             {
@@ -192,7 +193,7 @@ namespace Server.Discord
             var msg = await ctx.RespondAsync(builder);
 
             //compact list selector
-            if (compactEmbed)
+            /**if (compactEmbed)
             {
                 msg.OnSelectInteraction((args) => 
                 args.Id == "compactListSelector" + salt && args.User == ctx.User, 
@@ -203,9 +204,9 @@ namespace Server.Discord
                     || int.TryParse(args.Result.Values.First(), out int nr) == false
                     || nr < 0 || nr >= queryResult.Length)
                         return true;
-
+            
                     string salt = args.Result.Interaction.Id.ToString();
-
+            
                     var response = await args.Result.Interaction.CreateFollowupMessageAsync(
                          new DiscordFollowupMessageBuilder()
                          .AddEmbed(GenerateFullBookmarkEmbed(queryResult[nr], users[queryResult[nr].AuthorSnowflake]))
@@ -213,10 +214,10 @@ namespace Server.Discord
                          );
                     logger.LogInformation("response sent");
                     //response.OnDestroyButton(salt);
-
+            
                     return true;
                 });
-            }
+            }*/
         }
 
         #region utils
@@ -237,7 +238,7 @@ namespace Server.Discord
 
         #endregion
 
-        [Command("test")]
+        //[Command("test")]
         [Hidden]
         public async Task Test(CommandContext ctx)
         {
@@ -254,13 +255,13 @@ namespace Server.Discord
 
             msg.OnDestroyButton(salt);
             
-            //msg.OnButtonInteraction(args =>
-            //    args.Id == "buttonTest1" + salt, async args =>
-            //{
-            //    logger.LogInformation("Pressed button 1");
-            //    await args.Result.Interaction.CreateResponseAsync(InteractionResponseType.DeferredMessageUpdate);
-            //    return true;
-            //});
+            msg.OnButtonInteraction(args =>
+                args.Id == "buttonTest1" + salt, async args =>
+            {
+                logger.LogInformation("Pressed button 1");
+                await args.Result.Interaction.CreateResponseAsync(InteractionResponseType.DeferredMessageUpdate);
+                return true;
+            });
 
             
             //while (true)
@@ -283,12 +284,12 @@ namespace Server.Discord
                 return true;
             });
 
-            //msg.OnSelectInteraction(args => args.Id == "selectTest" + salt, async args =>
-            //{
-            //    logger.LogInformation($"Selected {args.Result.Values.First()}");
-            //    await args.Result.Interaction.CreateResponseAsync(InteractionResponseType.DeferredMessageUpdate);
-            //    return true;
-            //});
+            msg.OnSelectInteraction(args => args.Id == "selectTest" + salt, async args =>
+            {
+                logger.LogInformation($"Selected {args.Result.Values.First()}");
+                await args.Result.Interaction.CreateResponseAsync(InteractionResponseType.DeferredMessageUpdate);
+                return true;
+            });
         }
     }
 

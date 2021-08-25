@@ -25,7 +25,7 @@ namespace Server.Discord
         ILogger<BookmarkFeature> logger;
         Db.BookmarkContext context;
 
-        public BookmarkFeature(DiscordClient client, ILogger<BookmarkFeature> logger, Db.BookmarkContext context, CommandsNextExtension commands, InteractivityExtension interactivity)
+        public BookmarkFeature(DiscordClient client, ILogger<BookmarkFeature> logger, Db.BookmarkContext context, CommandsNextExtension commands)
         {
             this.client = client;
             this.logger = logger;
