@@ -71,15 +71,17 @@ namespace Server.Discord
 
         #region list
 
-        const string argumentsDescription = "Optional arguments: `user:<mention or id>` `channel:<mention or id>` `server:<id>` `compact:<true/false>`\n You can use `this` instead of an id.";
-        const int embedMsgCount = 5, compactEmbedMsgCount = 20;
+        const string argumentsDescription = "Optional arguments: `user:<mention or id>` `channel:<mention or id>` `server:<id>` `compact:<true/false>` page:<0-based index>\n You can use `this` instead of an id.";
+        const int embedMsgCount = 4, compactEmbedMsgCount = 8;
 
         //todo: fully implement compact mode work when interactivity works
+        //todo: implement pagination using buttons, the current method is very crude
         [Command("list"), Aliases("l"), Description("List all the bookmarks. You can filter the results using arguments.")]
         public async Task List(CommandContext ctx, [RemainingText][Description(argumentsDescription)] string arguments)
         {
             ulong filterUserId = 0, filterChannelId = 0, filterGuildId = 0;
             bool compactEmbed = true;
+            int pageNr=0;
             //string salt = ctx.Message.ToString();
 
             //arg parsing
@@ -139,12 +141,19 @@ namespace Server.Discord
                                     break;
                             }
                             break;
+                        case "page:":
+                            {
+                                int nr;
+                                if (int.TryParse(tokens[i + 1], out nr) && nr >= 0)
+                                    pageNr = nr;
+                                break;
+                            }
                     }
                 }
             }
 
             //getting bookmarks
-            Bookmark[] queryResult = bf.BookmarkQuery(ctx.User, compactEmbed ? compactEmbedMsgCount : embedMsgCount, filterUserId, filterChannelId, filterGuildId);
+            Bookmark[] queryResult = bf.BookmarkQuery(ctx.User, compactEmbed ? compactEmbedMsgCount : embedMsgCount, pageNr, filterUserId, filterChannelId, filterGuildId);
 
             if (queryResult.Length == 0)
             {

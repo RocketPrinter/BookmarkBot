@@ -138,7 +138,7 @@ namespace Server.Discord
             return true;
         }
 
-        public Bookmark[] BookmarkQuery(DiscordUser user, int querySize, ulong filterUserId, ulong filterChannelId, ulong filterGuildId)
+        public Bookmark[] BookmarkQuery(DiscordUser user, int querySize, int page, ulong filterUserId, ulong filterChannelId, ulong filterGuildId)
         {
             //todo: pagination
             IQueryable<Bookmark> query = context.Bookmarks
@@ -148,6 +148,9 @@ namespace Server.Discord
             if (filterUserId != 0)    query = query.Where(b => b.AuthorSnowflake == filterUserId);
             if (filterChannelId != 0) query = query.Where(b => b.ChannelSnowflake == filterChannelId);
             if (filterGuildId != 0)   query = query.Where(b => b.GuildSnowFlake == filterGuildId);
+
+            query = query.Skip(page * querySize)
+                .Take(querySize);
 
             return query.ToArray();
         }

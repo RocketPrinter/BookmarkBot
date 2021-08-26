@@ -58,7 +58,7 @@ namespace Server.Discord
                 }
                 .AddField($"Guilds", $"in {client.Guilds.Count} of them", false)
 
-                .AddField("Running", client.VersionString, true)
+                .AddField("D#+", client.VersionString, true)
                 .AddField("Commands", $"{cnext.RegisteredCommands.Count} loaded",true)
                 .AddField("Services", $"{services.Count} loaded", true)
 

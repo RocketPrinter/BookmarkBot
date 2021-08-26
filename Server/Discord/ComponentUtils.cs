@@ -17,7 +17,7 @@ public static class ComponentUtils
         {
             while (true)
             {
-                var result = await msg.WaitForButtonAsync(predicate);
+                var result = await msg.WaitForButtonAsync(predicate,null);
 
                 if (result.TimedOut || await action(result) == false)
                 {
