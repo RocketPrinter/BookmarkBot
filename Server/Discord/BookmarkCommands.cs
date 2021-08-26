@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using DSharpPlus;
 using System.Linq;
 using System.Collections;
+using Microsoft.Extensions.Configuration;
 
 namespace Server.Discord
 {
@@ -238,6 +239,7 @@ namespace Server.Discord
 
         #endregion
 
+        #region test
         //[Command("test")]
         [Hidden]
         public async Task Test(CommandContext ctx)
@@ -291,6 +293,7 @@ namespace Server.Discord
                 return true;
             });
         }
+        #endregion
     }
 
 }

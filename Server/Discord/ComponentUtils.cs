@@ -58,10 +58,7 @@ public static class ComponentUtils
                 args.Id == "destroyButton" + salt && (user == null || args.User == user)
                 , null);
             if (result.TimedOut)
-            {
-                System.Diagnostics.Trace.WriteLine($"destroyButton{salt} timed out");
                 return;
-            }
             await msg.DeleteAsync();
         });
     }

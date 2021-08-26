@@ -28,6 +28,9 @@ namespace Server
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            //probably a bad idea
+            services.AddSingleton(services);
+
             #region API
             //REST API and Swagger
             //services.AddControllers();
@@ -100,6 +103,7 @@ namespace Server
 
             //register command modules
             var cnext = app.ApplicationServices.GetService<CommandsNextExtension>();
+            cnext.RegisterCommands<Discord.CoreCommands>();
             if (Configuration.GetValue<bool>("BookmarkFeature"))
                 cnext.RegisterCommands<Discord.BookmarkCommands>();
 

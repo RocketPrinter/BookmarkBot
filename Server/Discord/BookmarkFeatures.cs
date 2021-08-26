@@ -90,7 +90,6 @@ namespace Server.Discord
         /// <returns> false if a bookmark already existed, throws an exception if any other error occurs</returns>
         public bool BookmarkAdd(DiscordUser user, DiscordMessage msg)
         {
-            //todo: should also save a small part of the message to display later
             Bookmark b = new()
             {
                 UserSnowflake = user.Id,
