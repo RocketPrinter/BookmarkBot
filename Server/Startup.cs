@@ -48,7 +48,7 @@ namespace Server
                 {
                     Token = Configuration.GetValue<string>("Bot:Token"),
                     LoggerFactory = x.GetRequiredService<ILoggerFactory>(),
-                    Intents = DiscordIntents.All //TODO: Remove unused Intents
+                    Intents = DiscordIntents.AllUnprivileged
                 });
                 client.ConnectAsync(/*new DiscordActivity("the dashboard", ActivityType.Watching)*/).Wait();
                 return client;
