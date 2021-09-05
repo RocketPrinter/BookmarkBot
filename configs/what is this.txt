@@ -1,4 +1,4 @@
-When using docker-compose "/configs" will get mounted and the server container will load "Server.json". Create the file and use it to store secrets like the ones below 
+Create "Server.json" and put all your sweet secrets in it! (use the pattern below) 
 For development use the Secret Manager!
 
 {
