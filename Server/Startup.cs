@@ -70,7 +70,7 @@ namespace Server
             #endregion
 
             //Bookmark
-            if (Configuration.GetValue<bool>("BookmarkFeature"))
+            if (Configuration.GetValue<bool>("Bot:BookmarkFeature"))
             {
                 services.AddDbContext<Db.BookmarkContext>(options =>
                     options.UseNpgsql(Configuration.GetConnectionString("Bookmark")), contextLifetime:ServiceLifetime.Singleton);
@@ -104,7 +104,7 @@ namespace Server
             //register command modules
             var cnext = app.ApplicationServices.GetService<CommandsNextExtension>();
             cnext.RegisterCommands<Discord.CoreCommands>();
-            if (Configuration.GetValue<bool>("BookmarkFeature"))
+            if (Configuration.GetValue<bool>("Bot:BookmarkFeature"))
                 cnext.RegisterCommands<Discord.BookmarkCommands>();
 
             //warm up types

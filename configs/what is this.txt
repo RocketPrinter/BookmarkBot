@@ -1,0 +1,12 @@
+When using docker-compose "/configs" will get mounted and the server container will load "Server.json". Create the file and use it to store secrets like the ones below 
+For development use the Secret Manager!
+
+{
+    "Bot": {
+        "Token": "token here"
+    },
+
+    "ConnectionStrings": {
+        "Bookmark": "connection string"
+    }
+}

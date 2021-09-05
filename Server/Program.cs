@@ -18,6 +18,12 @@ namespace Server
 
         public static IHostBuilder CreateHostBuilder(string[] args) =>
             Host.CreateDefaultBuilder(args)
+                .ConfigureAppConfiguration((hostingContext,config) =>
+                {
+                    // since the secret manager is only for development you can use this to specify the bot token and ConnectionStrings
+                    // intended to be used with a docker volume.
+                    config.AddJsonFile("./configs/Server.json",true,false);
+                })
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
                     webBuilder.UseStartup<Startup>();

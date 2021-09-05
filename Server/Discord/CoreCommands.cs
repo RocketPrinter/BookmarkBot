@@ -41,7 +41,7 @@ namespace Server.Discord
                     Color = DiscordColor.Blurple,
                     //ImageUrl = client.CurrentUser.AvatarUrl,
                     Title = "Click here!",
-                    Url = configuration.GetValue<string>("InviteLink")
+                    Url = configuration.GetValue<string>("Bot:InviteLink")
                 }
                 .WithAuthor("Invite")
             );

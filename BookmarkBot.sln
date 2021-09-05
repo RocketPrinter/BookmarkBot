@@ -5,6 +5,17 @@ VisualStudioVersion = 16.0.31005.135
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Server", "Server\Server.csproj", "{E77A7C12-172E-4DFF-859E-66C4E39596F9}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{6C490800-6556-4249-96C2-CCE4470E2412}"
+	ProjectSection(SolutionItems) = preProject
+		docker-compose.yml = docker-compose.yml
+		Dockerfile = Dockerfile
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "configs", "configs", "{60300C7C-AEF5-4432-8934-6E5F3F4DA94E}"
+	ProjectSection(SolutionItems) = preProject
+		configs\what is this.txt = configs\what is this.txt
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,6 +29,9 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{60300C7C-AEF5-4432-8934-6E5F3F4DA94E} = {6C490800-6556-4249-96C2-CCE4470E2412}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {B435E74C-D4E6-4840-8627-9C46CAA825D1}

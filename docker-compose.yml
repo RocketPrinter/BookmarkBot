@@ -1,0 +1,11 @@
+version: "3.9"
+
+services:
+ server:
+  build: .
+  image: server
+  volumes:
+   - type: bind
+     source: ./configs
+     target:  /app/configs
+     read_only: true 
