@@ -21,8 +21,9 @@ namespace Server
                 .ConfigureAppConfiguration((hostingContext,config) =>
                 {
                     // since the secret manager is only for development you can use this to specify the bot token and ConnectionStrings
-                    // intended to be used with a docker volume.
-                    config.AddJsonFile("./configs/Server.json",true,false);
+                    // intended to be used with a docker-compose secret
+                    // for some bizzare reason docker strips the file extension
+                    config.AddJsonFile("/run/secrets/server", true,false);
                 })
                 .ConfigureWebHostDefaults(webBuilder =>
                 {

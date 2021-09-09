@@ -4,8 +4,26 @@ services:
  server:
   build: .
   image: server
+  secrets:
+   - server
+  depends_on:
+   - db
+ db:
+  image: postgres
   volumes:
-   - type: bind
-     source: ./configs
-     target:  /app/configs
-     read_only: true 
+   - ./db:/var/lib/postgresql/data
+  secrets:
+   - postgres_user
+   - postgres_password
+  environment:
+   - POSTGRES_DB=bookmarkBot
+   - POSTGRES_USER_FILE=/run/secrets/postgres_user
+   - POSTGRES_PASSWORD_FILE=/run/secrets/postgres_password
+
+secrets:
+ server:
+  file: ./secrets/server.json
+ postgres_user:
+  file: ./secrets/postgres_user.txt
+ postgres_password:
+  file: ./secrets/postgres_password.txt

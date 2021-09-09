@@ -340,3 +340,6 @@ ASALocalRun/
 healthchecksdb
 /Server.json
 /configs/Server.json
+/configs/postgres_user.txt
+/configs/postgres_password.txt
+/db

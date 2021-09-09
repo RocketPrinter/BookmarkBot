@@ -101,6 +101,8 @@ namespace Server.Discord
                                 filterUserId = result;
                             else if (tokens[i + 1] == "this")
                                 filterUserId = ctx.User.Id;
+                            else if (tokens[i + 1].StartsWith("<@") && ulong.TryParse(tokens[i + 1].Substring(2, tokens[i + 1].Length - 3), out result))
+                                filterUserId = result;
                             else if (tokens[i + 1].StartsWith("<@!") && ulong.TryParse(tokens[i + 1].Substring(3, tokens[i + 1].Length - 4), out result))
                                 filterUserId = result;
                             break;

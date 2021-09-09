@@ -2,6 +2,7 @@
 ![Bookmark](bookmark.png)
 # BookmarkBot # 
 A simple discord bot written in C# and using [DSharpPlus](https://github.com/DSharpPlus/DSharpPlus), [ASP.NET Core](https://github.com/dotnet/aspnetcore), [EF Core](https://github.com/dotnet/efcore) and [PostgresSQL](https://www.postgresql.org/).
+It uses [docker-compose](https://github.com/docker/compose) for easy and simple deployment.
 I made it to prepare myself for making a more complex and actually useful bot.
 
 ## Features ##
