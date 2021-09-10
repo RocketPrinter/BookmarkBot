@@ -20,6 +20,15 @@ namespace Server.Discord
         BookmarkFeature bf;
         DiscordClient client;
 
+        public async void Test()
+        {
+            Task.Delay(1000);
+
+            _ = Task.Delay(1000);
+
+            await Task.Delay(2);
+        }
+
         public BookmarkCommands(ILogger<BookmarkCommands> logger, BookmarkFeature bf, DiscordClient client)
         {
             this.logger = logger;
@@ -101,9 +110,9 @@ namespace Server.Discord
                                 filterUserId = result;
                             else if (tokens[i + 1] == "this")
                                 filterUserId = ctx.User.Id;
-                            else if (tokens[i + 1].StartsWith("<@") && ulong.TryParse(tokens[i + 1].Substring(2, tokens[i + 1].Length - 3), out result))
+                            else if (tokens[i + 1].StartsWith("<@") && ulong.TryParse(tokens[i + 1][2..^1], out result))
                                 filterUserId = result;
-                            else if (tokens[i + 1].StartsWith("<@!") && ulong.TryParse(tokens[i + 1].Substring(3, tokens[i + 1].Length - 4), out result))
+                            else if (tokens[i + 1].StartsWith("<@!") && ulong.TryParse(tokens[i + 1][3..^1], out result))
                                 filterUserId = result;
                             break;
 
@@ -112,7 +121,7 @@ namespace Server.Discord
                                 filterChannelId = result;
                             else if (tokens[i + 1] == "this")
                                 filterChannelId = ctx.Channel.Id;
-                            else if (tokens[i + 1].StartsWith("<#") && ulong.TryParse(tokens[i + 1].Substring(2, tokens[i + 1].Length - 3), out result))
+                            else if (tokens[i + 1].StartsWith("<#") && ulong.TryParse(tokens[i + 1][2..^1], out result))
                                 filterChannelId = result;
                             break;
 
