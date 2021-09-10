@@ -10,5 +10,13 @@ I made it to prepare myself for making a more complex and actually useful bot.
 * View bookmarks using `b/list` and filter them by server, channel and user. It includes a compact and non-compact mode as well as a very crude pagination system.
 * `b/invite` and `b/status` commands.
 
-## How to use
-remind me to add this later
+### How to develop
+1. `git pull`
+2. Use the secrets manager to store the bot token and connection string. (read `./secrets/templates.txt`)
+3. Install + config postgres on your local machine.
+4. Have fun
+
+### How to deploy
+1. `git pull`
+2. Use `./secrets/templates.txt` to create and fill in the neccesary files.
+3. `docker-compose up`
