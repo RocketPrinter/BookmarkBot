@@ -20,15 +20,6 @@ namespace Server.Discord
         BookmarkFeature bf;
         DiscordClient client;
 
-        public async void Test()
-        {
-            Task.Delay(1000);
-
-            _ = Task.Delay(1000);
-
-            await Task.Delay(2);
-        }
-
         public BookmarkCommands(ILogger<BookmarkCommands> logger, BookmarkFeature bf, DiscordClient client)
         {
             this.logger = logger;
