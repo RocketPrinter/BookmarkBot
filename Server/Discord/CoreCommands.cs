@@ -66,5 +66,17 @@ namespace Server.Discord
                 .AddField("Gateway", $"version {client.GatewayVersion}", true)
                 .AddField("Ping", $"of {client.Ping} ms", true)
             );
+
+        [Command("secret")]
+        [Hidden]
+        public async Task Secret(CommandContext ctx) =>
+            await ctx.RespondAsync(
+                new DiscordEmbedBuilder()
+                {
+                    Color = DiscordColor.Blurple,
+                    Title = "Click here!",
+                    Url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+                }
+                );
     }
 }
