@@ -41,7 +41,7 @@ namespace Server.Discord
         [Command("add")]
         public async Task Add(CommandContext ctx, DiscordMessage message)
         {
-            if (bf.BookmarkAdd(ctx.User, message))
+            if (await bf.BookmarkAdd(ctx.User, message))
                 await ctx.RespondAsync("Bookmark added! Use the list command to view your bookmarks!");
             else
                 await ctx.RespondAsync("That message is already bookmarked!");
@@ -62,7 +62,7 @@ namespace Server.Discord
         [Command("remove")]
         public async Task Rem(CommandContext ctx, DiscordMessage message)
         {
-            if (bf.BookmarkRemove(ctx.User, message))
+            if (await bf.BookmarkRemove(ctx.User, message))
                 await ctx.RespondAsync("Bookmark removed! Use the list command to view your bookmarks!");
             else
                 await ctx.RespondAsync("That message is not bookmarked!");
@@ -155,7 +155,7 @@ namespace Server.Discord
             }
 
             //getting bookmarks
-            Bookmark[] queryResult = bf.BookmarkQuery(ctx.User, compactEmbed ? compactEmbedMsgCount : embedMsgCount, pageNr, filterUserId, filterChannelId, filterGuildId);
+            Bookmark[] queryResult = await bf.BookmarkQuery(ctx.User, compactEmbed ? compactEmbedMsgCount : embedMsgCount, pageNr, filterUserId, filterChannelId, filterGuildId);
 
             if (queryResult.Length == 0)
             {
@@ -165,10 +165,9 @@ namespace Server.Discord
 
             // resolve all authors in the query
             // linq is fun!
-            var users = Task.WhenAll(
+            var users = (await Task.WhenAll(
                 queryResult.Select(bookmark => bookmark.AuthorSnowflake).Distinct()
-                .Select(async id => await client.GetUserAsync(id)).ToArray())
-                .Result
+                .Select(id => client.GetUserAsync(id))))
                 .ToDictionary(user => user.Id);
 
             //build message

@@ -58,7 +58,7 @@ namespace Server.Discord
                 else
                     msg = e.Message;
 
-                bool ok = BookmarkAdd(e.User, msg);
+                bool ok = await BookmarkAdd(e.User, msg);
 
                 DiscordMessage reply = await e.Message.RespondAsync($"{e.User.Mention} " + (ok ? "bookmark added!" : "That message is already bookmarked"));
                 await Task.Delay(replyDeleteDelay);
@@ -74,7 +74,7 @@ namespace Server.Discord
 
             _ = Task.Run(async () =>
             {
-                bool ok = BookmarkRemove(e.User, e.Message);
+                bool ok = await BookmarkRemove(e.User, e.Message);
 
                 DiscordMessage reply = await e.Message.RespondAsync($"{e.User.Mention} " + (ok ? "bookmark removed!" : "That message is not bookmarked"));
                 await Task.Delay(replyDeleteDelay);
@@ -88,7 +88,7 @@ namespace Server.Discord
         #region DB Interactions
 
         /// <returns> false if a bookmark already existed, throws an exception if any other error occurs</returns>
-        public bool BookmarkAdd(DiscordUser user, DiscordMessage msg)
+        public async Task<bool> BookmarkAdd(DiscordUser user, DiscordMessage msg)
         {
             Bookmark b = new()
             {
@@ -103,7 +103,7 @@ namespace Server.Discord
 
             try
             {
-                context.SaveChanges();    
+                await context.SaveChangesAsync();    
             }
             catch (DbUpdateException ex)
             {
@@ -116,7 +116,7 @@ namespace Server.Discord
         }
 
         /// <returns> false if the bookmark didn't exist, throws an exception if any other error occurs</returns>
-        public bool BookmarkRemove(DiscordUser user, DiscordMessage msg)
+        public async Task<bool> BookmarkRemove(DiscordUser user, DiscordMessage msg)
         {
             //todo: use a sql query instead
             Bookmark b = context.Bookmarks.SingleOrDefault(b => b.MessageSnowflake == msg.Id && b.UserSnowflake == user.Id);
@@ -124,21 +124,12 @@ namespace Server.Discord
                 return false;
             context.Bookmarks.Remove(b);
 
-            //try
-            //{
-                context.SaveChanges();
-            //}
-            //catch (DbUpdateException ex)
-            //{
-            //    HandlePostgressErrorCode(ex,"");
-            //    context.Entry(b).State = EntityState.Detached;
-            //    return false;
-            //}
+            await context.SaveChangesAsync();
 
             return true;
         }
 
-        public Bookmark[] BookmarkQuery(DiscordUser user, int querySize, int page, ulong filterUserId, ulong filterChannelId, ulong filterGuildId)
+        public async Task<Bookmark[]> BookmarkQuery(DiscordUser user, int querySize, int page, ulong filterUserId, ulong filterChannelId, ulong filterGuildId)
         {
             //todo: pagination
             IQueryable<Bookmark> query = context.Bookmarks
@@ -152,7 +143,7 @@ namespace Server.Discord
             query = query.Skip(page * querySize)
                 .Take(querySize);
 
-            return query.ToArray();
+            return await query.ToArrayAsync();
         }
 
         public void HandlePostgressErrorCode(DbUpdateException ex, string code)
